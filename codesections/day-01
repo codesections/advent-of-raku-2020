@@ -1,0 +1,6 @@
+#!/usr/bin/env raku
+unit sub MAIN( #= Solve the 2020 Day 01 Advent of Code puzzle
+    Bool :$p2  #={ Solve Part 2 instead of Part 1 (the default) } );
+my @in = lines;
+when !$p2 { for @in X @in -> ($a, $b) { when $a + $b      == 2020 { say $a × $b }} }
+for   @in X @in X @in -> ($a, $b, $c) { when $a + $b + $c == 2020 { say $a × $b × $c }}
