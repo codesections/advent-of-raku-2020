@@ -3,7 +3,7 @@ my @input = 'input/1.input'.IO.slurp.lines.map( *.Int );
 sub find2020 ($n = 2) {
   for @input.combinations($n) {
     if .sum == 2020 {
-      say "({ .[0] } x { .[1] }) = { [*]( |$_ ) }";
+      say "({ .[0] } x { .[1] } x { .[2] // 1 }) = { [*]( |$_ ) }";
       last;
     }
   }
