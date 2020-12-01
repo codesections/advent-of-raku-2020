@@ -30,6 +30,10 @@ And if you _can't_ figure out an answer you're happy with, then you should _also
 free to ask for help on IRC/the issues/the subreddit – there will almost certainly be
 someone who can tell you how to get Raku to do what you want it to do!
 
+Anyone who is completing AoC puzzles is also welcome to join the Raku [private
+leaderboard](https://adventofcode.com/2020/leaderboard/private).  The code to join is
+`407451-52d64a27`. 
+
 ## Getting started with Raku
 
 The resources below may be helpful, especially if you are new to Raku.  If you have
