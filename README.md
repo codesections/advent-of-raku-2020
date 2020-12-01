@@ -59,5 +59,15 @@ interface](https://webchat.freenode.net/#raku).
   Raku in one page.  A good reference for when you're getting started, but not intended to
   teach a lot on its own.
 * [docs.raku](https://docs.raku.org/) - The main Raku docs.  Very good, but mostly more of
-  a reference than a tutorial (though it does have several tutorials)
-               
+  a reference than a tutorial (though it does have several tutorials).
+  
+#### Community Spaces
+
+* [#raku freenode IRC channel](https://raku.org/community/irc) - The main way to reach all
+  the Raku community.  Always open for questions and always friendly.
+* [r/rakulang](https://www.reddit.com/r/rakulang/) - The Raku subreddit.  A great place
+  for general async discussion on a broad range of topics.
+* [Raku StackOverflow](https://stackoverflow.com/questions/tagged/raku) - Home to all and
+  sundry technical questions about the Raku language.  Most of the moderators who look at
+  the Raku tag are members of our community and thus that corner of StackOverflow is a bit
+  friendlier/less likely to abruptly close questions than some other corners are.
