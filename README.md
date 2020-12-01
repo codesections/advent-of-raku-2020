@@ -21,6 +21,15 @@ string `input` in their filename, so you can keep input files in the same direct
 your answers.  Once you have an answer that you're happy with, push your changes upstream
 and submit a pull request, which will likely be merged promptly.
 
+Once you've submitted your answer, please feel free to discuss it in the [#raku IRC
+channel](https://raku.org/community/irc), in this repo's issue tracker, and/or on the
+[r/rakulang](https://www.reddit.com/r/rakulang/) subreddit – after all, comparing and
+discussing our solutions is how we learn.
+
+And if you _can't_ figure out an answer you're happy with, then you should _also_ feel
+free to ask for help on IRC/the issues/the subreddit – there will almost certainly be
+someone who can tell you how to get Raku to do what you want it to do!
+
 ## Getting started with Raku
 
 The resources below may be helpful, especially if you are new to Raku.  If you have
@@ -60,6 +69,10 @@ interface](https://webchat.freenode.net/#raku).
   teach a lot on its own.
 * [docs.raku](https://docs.raku.org/) - The main Raku docs.  Very good, but mostly more of
   a reference than a tutorial (though it does have several tutorials).
+* [To compute a constant of calculus (A treatise on multiple
+  ways)](http://blogs.perl.org/users/damian_conway/2019/09/to-compute-a-constant-of-calculusa-treatise-on-multiple-ways.html) -
+  Less a tutorial than an approachable demo of some of the neat tricks Raku can pull off.
+  Don't read this when you're stuck; read it when you're looking for inspiration.
   
 #### Community Spaces
 
