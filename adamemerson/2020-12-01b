@@ -1,0 +1,16 @@
+#!/usr/bin/env raku
+unit sub MAIN( #=  Solve the 2020 AoC day 01 puzzle
+);
+sub findproduct(@l) {
+    [*] (@l X @l X @l).first({([+] $_) == 2020})
+}
+
+say findproduct(lines.map(+*));
+
+# Tests (run with `raku --doc -c $FILE`)
+DOC CHECK {
+    use Test;
+    subtest 'Part 1', {
+	findproduct(<1721 979 366 299 675 1456>).&is: 241861950;
+    }
+}
