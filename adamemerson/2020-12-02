@@ -1,0 +1,76 @@
+#!/usr/bin/env raku
+unit sub MAIN( #=  Solve the 2020 AoC day 02 puzzle
+    Bool :$p2  #={ Solve Part 2 instead of Part 1 (the default) } );
+
+sub count_if($list, &P) {
+    (0, Slip($list)).reduce({ P($^b) ?? $^a+1 !! $^a });
+}
+
+sub parse_line(Str:D $l --> List:D) {
+    grammar PasswordEntry {
+	rule TOP { <policy>\: <password> };
+	rule policy { <min>\-<max> <char> };
+	token min { <:N>+ };
+	token max { <:N>+ };
+	token char { . };
+	token password { .+ };
+    };
+
+    class EntryActions {
+	method char($/) {
+	    $/.make: ~$/
+	}
+	method min($/) {
+	    $/.make: +$/
+	}
+	method max($/) {
+	    $/.make: +$/
+	}
+	method policy($/) {
+	    $/.make: ($/<char>.made, $/<min>.made, $<max>.made)
+	}
+	method password($/) {
+	    $/.make: ~$/
+	}
+	method TOP($/) {
+	    $/.make: (slip($<policy>.made), $<password>.made)
+	}
+    };
+
+    my $actions = EntryActions;
+    PasswordEntry.parse($l, :$actions).made
+}
+
+sub verify_p1(Str $char, Int $min, Int $max, Str $password --> Bool) {
+    my $count = $password.split('', :skip-empty).&count_if({$^a eq $char});
+    $count ≥ $min and $count ≤ $max
+}
+
+sub verify_p2(Str $char, Int $p1, Int $p2, Str $password --> Bool) {
+    my $r1 = $password.chars ≥ $p1 && $password.substr($p1 - 1, 1) eq $char;
+    my $r2 = $password.chars ≥ $p2 && $password.substr($p2 - 1, 1) eq $char;
+    return ?&($r1 ^^ $r2);
+}
+
+sub count_valid(&verify, @lines) {
+    @lines.map({ &verify(|parse_line($^a)) }).&count_if({ $^a });
+}
+
+say count_valid(($p2 ?? &verify_p2 !! &verify_p1), lines);
+
+# Tests (run with `raku --doc -c $FILE`)
+DOC CHECK {
+    use Test;
+    subtest 'Part 1', {
+	count_valid(&verify_p1,
+		    ('1-3 a: abcde',
+		     '1-3 b: cdefg',
+		     '2-9 c: ccccccccc')).&is: 2;
+    }
+    subtest 'Part 2', {
+	count_valid(&verify_p2,
+		    ('1-3 a: abcde',
+		     '1-3 b: cdefg',
+		     '2-9 c: ccccccccc')).&is: 1;
+    }
+}
