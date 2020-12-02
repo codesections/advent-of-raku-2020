@@ -1,0 +1,36 @@
+#!/usr/bin/env raku
+
+unit sub MAIN ( Bool :$test, Int :$part = 1, :$debug = %*ENV<AOC_DEBUG> );
+
+my $data = $?FILE.IO.sibling: $test ?? 'test' !! 'data';
+
+say $data.slurp.lines.grep( $part == 1 ?? &part1 !! &part2 ).elems;
+
+sub validate {
+    $^line ~~/
+        $<lo>   = \d+ '-'
+        $<hi>   = \d+ ' '
+        $<char> = \w  ': '
+        $<pass> = .*
+    / or die $^line;
+}
+
+sub part1 ( Str $line --> Bool ) {
+    temp $/ = validate $line;
+    note "$<pass> must have between $<lo> and $<hi> instances of «$<char>»" if $debug;
+    my $got = $<pass>.comb(~$<char>).elems;
+    given $got ~~ $<lo>..$<hi> {
+        note "It has $got: $_" if $debug;
+        .return;
+    }
+}
+
+sub part2 ( Str $line --> Bool ) {
+    temp $/ = validate $line;
+    note "$<pass> must have «$<char>» in either position $<lo> OR $<hi>" if $debug;
+    my @got = $<pass>.comb[ $<lo> - 1, $<hi> - 1 ].grep: ~$<char>;
+    given @got.elems == 1 {
+        note "It has { @got.elems }: $_" if $debug;
+        .return;
+    }
+}
