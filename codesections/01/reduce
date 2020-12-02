@@ -1,0 +1,6 @@
+#!/usr/bin/env raku
+#| Return the product of the first two (p1) or three (p2) numbers that sum to 2020
+unit sub MAIN(Bool :$p2=?0);
+{ say [×] $_ when .sum == 2020 for [X] @_ xx 2+$p2 }(lines)
+
+# (This is likely too cute, but it sure is fun)
