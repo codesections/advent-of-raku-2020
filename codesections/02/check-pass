@@ -1,0 +1,37 @@
+#!/usr/bin/env raku
+grammar PasswordPolicy {...}
+
+#| Check a password & policy file for conforming password
+sub MAIN(Bool :$p2=?0, Bool :$p1=!$p2) {
+    lines.map({PasswordPolicy.parse($_)})
+    ==> grep({
+        when ?$p1 {.<num>[0] ≤ .<password>.comb(.<required-char>) ≤ .<num>[1]}
+        when ?$p2 {
+            my $indces := .<num>.map(*-1);
+            [xor] .<password>.comb[$indces[0], $indces[1]].map(* eq .<required-char>)
+        }})
+    ==> map({$<password>})
+    ==> join("\n")
+    ==> {.say; "$_\n"}()
+    # This should technically return the count instead of the full list.
+    # But it seems more in keeping with the Unix philosophy to return the list and use `wc -l`
+}
+
+grammar PasswordPolicy {
+    token TOP { <num> '-' <num> <.ws> <required-char> ':' <.ws> <password> }
+
+    token num           { \d+ }
+    token required-char { \w }
+    token password      { \w+ }
+}
+
+# Tests (run with `raku --doc -c $FILE`)
+DOC CHECK { use Test;
+    $*IN = q:to/EOF/;
+        1-3 a: abcde
+        1-3 b: cdefg
+        2-9 c: ccccccccc
+        EOF
+    MAIN(:p1).&is("abcde\nccccccccc\n");
+    MAIN(:p2).&is("abcde\n");
+}
