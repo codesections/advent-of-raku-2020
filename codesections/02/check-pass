@@ -3,9 +3,9 @@ grammar PasswordPolicy {...}
 
 #| Check a password & policy file for conforming password
 sub MAIN(Bool :$p2=?0, Bool :$p1=!$p2) {
-    say lines.map({PasswordPolicy.parse($_)})
+    lines.map({PasswordPolicy.parse($_)})
     .grep({ when ?$p1 { .<num>[0] ≤ .<password>.comb(.<target-char>) ≤ .<num>[1] }
-               when ?$p2 { .<password>.comb[.<num>.map(*-1)].one eq .<target-char>} }).elems
+               when ?$p2 { .<password>.comb[.<num>.map(*-1)].one eq .<target-char>} })
     ==> map({$<password>})
     ==> join("\n")
     ==> {.say; "$_\n"}()
