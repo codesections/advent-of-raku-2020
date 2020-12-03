@@ -1,0 +1,142 @@
+#+SETUPFILE: ~/.emacs.d/org-templates/level-2.org
+#+HTML_LINK_UP: ../../writings/
+#+OPTIONS: toc:2
+#+EXPORT_FILE_NAME: index
+#+TITLE: Day 01 - Report Repair
+
+* Puzzle
+- This puzzle is taken from: https://adventofcode.com/2020/day/1
+
+After saving Christmas five years in a row, you've decided to take a
+vacation at a nice resort on a tropical island. Surely, Christmas will
+go on without you.
+
+The tropical island has its own currency and is entirely cash-only. The
+gold coins used there have a little picture of a starfish; the locals
+just call them stars. None of the currency exchanges seem to have heard
+of them, but somehow, you'll need to find fifty of these coins by the
+time you arrive so you can pay the deposit on your room.
+
+To save your vacation, you need to get all fifty stars by December 25th.
+
+Collect stars by solving puzzles. Two puzzles will be made available on
+each day in the Advent calendar; the second puzzle is unlocked when you
+complete the first. Each puzzle grants one star. Good luck!
+
+Before you leave, the Elves in accounting just need you to fix your
+expense report (your puzzle input); apparently, something isn't quite
+adding up.
+
+Specifically, they need you to find the two entries that sum to 2020 and
+then multiply those two numbers together.
+
+For example, suppose your expense report contained the following:
+#+BEGIN_SRC
+1721
+979
+366
+299
+675
+1456
+#+END_SRC
+
+In this list, the two entries that sum to 2020 are 1721 and 299.
+Multiplying them together produces 1721 * 299 = 514579, so the correct
+answer is 514579.
+
+Of course, your expense report is much larger. Find the two entries that
+sum to 2020; what do you get if you multiply them together?
+** Part 2
+The Elves in accounting are thankful for your help; one of them even
+offers you a starfish coin they had left over from a past vacation. They
+offer you a second one if you can find three numbers in your expense
+report that meet the same criteria.
+
+Using the above example again, the three entries that sum to 2020 are
+979, 366, and 675. Multiplying them together produces the
+answer, 241861950.
+
+In your expense report, what is the product of the three entries that
+sum to 2020?
+* Solution
+Slurping the input file to =@inputs=. =@inputs= will contain an array of
+integers from the input file which were seperated by a newline.
+#+BEGIN_SRC raku
+my @inputs;
+@inputs = "input".IO.lines>>.Int;
+#+END_SRC
+
+Iterate over all possible combinations of =@inputs=, so 2 nested =for= loop
+would've solved it. But a better solution would be to remove elements
+from =@inputs= while iterating over it.
+
+Consider this list: (=1, 2=). A nested =for= loop on it means we have to
+check for (=1, 1=, =1, 2=, =2, 1=, =2, 2=). But =1 + 2= is the same as =2 + 1= so we
+could've dropped either the 1st or the 2nd index from that array.
+
+We do just that by =pop='ing the value from =@inputs= while iterating. That
+way we just check for (=1, 1=, =1, 2=, =2, 2=). (=1, 2=) is skipped because =1=
+was =pop='ed out in =while= loop.
+
+#+BEGIN_SRC raku
+while pop @inputs -> $num_1 {
+    my Int $diff = 2020 - $num_1;
+    for @inputs -> $num_2 {
+        say "Part 1: ", $num_2 * $num_1 if $diff == $num_2;
+    }
+}
+#+END_SRC
+
+Also, =$diff= is calculated to be =2020 - $num_1= & checked for =$diff= being
+equal to =$num_2=. The check should be =$num_1 + $num_2= being equal to
+=2020=. But that would mean this addition would be run the number of times
+=for= loop is run. It is optimized by calculating =$diff= once for each =for=
+iteration.
+
+For example, consider this list: (=1, 2=). Without this optimization we go
+through these steps:
+#+BEGIN_SRC
+## first iteration through while loop
+if 1 + 1 == 2020 then print 1 * 1 # for loop 1
+if 1 + 2 == 2020 then print 1 * 2 # for loop 2
+
+## second iteration through while loop
+if 2 + 2 == 2020 then print 2 * 2 # for loop 1
+#+END_SRC
+
+But with the optimization we go through these steps:
+#+BEGIN_SRC
+## first iteration through while loop
+diff = 2020 - 1
+if 1 == diff then print 1 * 1 # for loop 1
+if 2 == diff then print 1 * 2 # for loop 2
+
+## second iteration through while loop
+diff = 2020 - 2
+if 2 == diff then print 2 * 2 # for loop 2
+#+END_SRC
+
+You see what changes? We replaced all that addition in each =for=
+iteration with a single subtraction. In our example list, instead of 3
+addition operations we just perform 2 subtraction operations but the
+optimization will better work on longer list.
+
+Now this is not the best solution, we could do some more optimization
+but I'll leave it at this.
+** Part 2
+Input is again slurped to =@inputs=. This time 3 nested for loops are
+implemented instead. This was the simplest solution that came to my
+mind.
+#+BEGIN_SRC raku
+@inputs = "input".IO.lines>>.Int;
+for @inputs -> $num_1 {
+    for @inputs -> $num_2 {
+        for @inputs -> $num_3 {
+            if 2020 == $num_1 + $num_2 + $num_3 {
+                say "Part 2: ", ($num_1 * $num_2 * $num_3);
+                exit;
+            }
+        }
+    }
+}
+#+END_SRC
