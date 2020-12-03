@@ -3,26 +3,21 @@ grammar PasswordPolicy {...}
 
 #| Check a password & policy file for conforming password
 sub MAIN(Bool :$p2=?0, Bool :$p1=!$p2) {
-    lines.map({PasswordPolicy.parse($_)})
-    ==> grep({
-        when ?$p1 {.<num>[0] ≤ .<password>.comb(.<required-char>) ≤ .<num>[1]}
-        when ?$p2 {
-            my $indces := .<num>.map(*-1);
-            [xor] .<password>.comb[$indces[0], $indces[1]].map(* eq .<required-char>)
-        }})
+    say lines.map({PasswordPolicy.parse($_)})
+    .grep({ when ?$p1 { .<num>[0] ≤ .<password>.comb(.<target-char>) ≤ .<num>[1] }
+               when ?$p2 { .<password>.comb[.<num>.map(*-1)].one eq .<target-char>} }).elems
     ==> map({$<password>})
     ==> join("\n")
     ==> {.say; "$_\n"}()
-    # This should technically return the count instead of the full list.
+    # This should technically return the count instead of the list and could cut the last 3 lines.
     # But it seems more in keeping with the Unix philosophy to return the list and use `wc -l`
 }
 
 grammar PasswordPolicy {
-    token TOP { <num> '-' <num> <.ws> <required-char> ':' <.ws> <password> }
-
-    token num           { \d+ }
-    token required-char { \w }
-    token password      { \w+ }
+    token TOP { <num> '-' <num> <.ws> <target-char> ':' <.ws> <password> }
+    token num         { \d+ }
+    token target-char { \w }
+    token password    { \w+ }
 }
 
 # Tests (run with `raku --doc -c $FILE`)
