@@ -1,0 +1,46 @@
+#!/usr/bin/env raku
+
+unit sub MAIN ( Bool :$test, Int :$part = 1, :$debug = %*ENV<AOC_DEBUG> );
+
+my $data   = $?FILE.IO.sibling( $test ?? 'test' !! 'data' ).lines».comb;
+my @slopes = $part == 1 ?? 1 / 3 !! ( 1 / 1, 1 / 3, 1 / 5, 1 / 7, 2 / 1 );
+
+say [*] gather for @slopes -> $slope {
+    given solve $data, $slope {
+        say "Found $_ trees" if $debug;
+        .take;
+    }
+}
+
+my class Point {
+    has Int $.x = 0;
+    has Int $.y = 0;
+
+    method step ( Rat $slope ) {
+        $!x += $slope.denominator;
+        $!y += $slope.numerator;
+    }
+
+    method Str of Str { sprintf '[ %d, %d ]', $!x, $!y }
+}
+
+sub solve ( @rows where *.elems >= 1, Rat $slope --> Int ) {
+    say "Slope is { $slope.denominator } right and { $slope.numerator } down" if $debug;
+
+    my $point = Point.new;
+    my $span  = @rows[0].elems;
+
+    return [+] gather loop {
+        print "Point is at $point. " if $debug;
+        LEAVE $point.step: $slope;
+
+        with @rows[ $point.y; $point.x % $span ] {
+            say "Found $_" if $debug;
+            take 1 when '#'
+        }
+        else {
+            say "Done" if $debug;
+            last;
+        }
+    }
+}
