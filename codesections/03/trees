@@ -1,0 +1,40 @@
+#!/usr/bin/env raku
+#| Given a grid of .s and #s, returns the product of the number #s that lines starting in
+#| in the top left corner would intersect.  p1 calculates this for one line; p2 for many.
+sub MAIN(Bool :$p2=?0, Bool :$p1=!$p2) {
+    my @grid = lines.map({|.comb xx ∞});
+    when $p1 { say @grid.&trees(3/1) }
+    when $p2 { say [×] (1/1, 3/1, 5/1, 7/1, 1/2).map({@grid.&trees($_)}) }    
+}
+
+sub trees(@grid, Rat $slope --> Int) {
+   my ($row, $col) = (0, 0);
+   gather { while $col < @grid.elems {
+       take @grid[$col; $row] eq '#';
+       ($row, $col) «+=» $slope.nude;
+   }}.sum 
+}
+
+
+# Tests (run with `raku --doc -c $FILE`)
+DOC CHECK { use Test;
+    my @test-grid = q:to/EOF/.lines.map({|.comb xx ∞});
+        ..##.......
+        #...#...#..
+        .#....#..#.
+        ..#.#...#.#
+        .#...##..#.
+        ..#.##.....
+        .#.#.#....#
+        .#........#
+        #.##...#...
+        #...##....#
+        .#..#...#.#
+        EOF
+    subtest 'part 1', { @test-grid.&trees(3/1).&is(7); }
+    subtest 'part 2', { @test-grid.&trees(1/1).&is(2);
+                        @test-grid.&trees(3/1).&is(7);
+                        @test-grid.&trees(5/1).&is(3);
+                        @test-grid.&trees(7/1).&is(4);
+                        @test-grid.&trees(1/2).&is(2); }
+}

@@ -1,0 +1,41 @@
+#!/usr/bin/env raku
+
+unit sub MAIN ( Bool :$test, Int :$part = 1, :$debug = %*ENV<AOC_DEBUG> );
+
+my $data = $?FILE.IO.sibling: $test ?? 'test' !! 'data';
+my $n    = $part == 1               ?? 2      !! 3;
+
+say solve $data.IO.slurp.lines.map(*.Int).sort, $n;
+
+proto solve ( @, $n, $target = 2020 --> Int ) {
+    note "Solving for $n elements, to target $target" if $debug;
+    {*}
+}
+
+multi sub solve ( @list, $n where * > 2, $target = 2020 --> Int ) {
+    for @list.reverse.kv -> $index, $value {
+        note "Trying $value" if $debug;
+        return $value * $_ with solve(
+            @list[ ^( @list.elems - 1 - $index ) ],
+            $n - 1,
+            $target - $value,
+        )
+    }
+
+    return Int;
+}
+
+multi sub solve ( @list, $n where 2, $target = 2020 --> Int ) {
+    for @list.reverse -> $base {
+        note "Trying $base" if $debug;
+        for @list -> $extra {
+            my $total = $base + $extra;
+            note "$base + $extra = $total" if $debug;
+
+            return $base * $extra if $total == $target;
+            last                  if $total >  $target;
+        }
+    }
+
+    return Int;
+}
