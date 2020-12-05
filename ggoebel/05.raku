@@ -18,6 +18,6 @@ sub MAIN (
 }
 
 sub seat_id (Str $code --> Int) {
-    return +('0b' ~ $code.comb.map({ /<[BR]>/ ?? 1 !! 0 }).join);
+    return +('0b' ~ $code.trans(<F B R L> => <0 1 1 0>));
 }
 
