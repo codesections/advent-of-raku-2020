@@ -18,14 +18,6 @@ sub MAIN (
 }
 
 sub seat_id (Str $code --> Int) {
-    my ($row, $col) = (0,0);
-    for $code.substr(0..6).comb -> $r {
-        $row = $row +< 1;
-        $row += 1  if $r eq 'B';
-    };
-    for $code.substr(7..9).comb -> $c {
-        $col = $col +< 1;
-        $col +=1  if $c eq 'R';
-    }
-    return $row * 8 + $col;
+    return +('0b' ~ $code.comb.map({ /<[BR]>/ ?? 1 !! 0 }).join);
 }
+
