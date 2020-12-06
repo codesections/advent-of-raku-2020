@@ -1,0 +1,29 @@
+#!/bin/env raku
+#| Count the answers on a customs form: questions with at least 1 yes (p1) or all yeses (p2)
+sub MAIN(Bool :$p2=?0, Bool :$p1=!$p2) {
+    when $p1 { say slurp.split("\n\n").map({Set.new(.comb.grep(/\N/)).elems}).sum }
+    when $p2 { say slurp.split("\n\n").map({ +[∩] @[.lines.map({@[.comb]})]}).sum }
+}
+
+# Tests (run with `raku --doc -c $NAME`)
+DOC CHECK { use Test;
+    my @in = q:to/§/.split("\n\n");
+        abc
+
+        a
+        b
+        c
+
+        ab
+        ac
+
+        a
+        a
+        a
+        a
+
+        b
+        §
+     @in.map({Set.new(.comb.grep(/\N/)).elems}).sum.&is(11, 'part 1'); 
+     @in.map({ +[∩] @[.lines.map({@[.comb]})]}).sum.&is(6, 'part 2');
+}
