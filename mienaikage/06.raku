@@ -6,15 +6,11 @@ unit sub MAIN (
   --> Nil
 );
 
-say do given $part {
-  when 1 {
-    result { .comb(/\w/).unique.elems }
+say do given { $file.slurp.split("\n" x 2).map(&^a).sum } {
+  when $part == 1 {
+    .( *.comb(/\w/).unique.elems );
   }
-  when 2 {
-    result { .lines.map( *.comb(/\w/).Set ).reduce(&infix:<∩>).elems }
+  when $part == 2 {
+    .( *.lines.map( *.comb(/\w/).Set ).reduce(&infix:<∩>).elems );
   }
 };
-
-sub result ( &block --> Int ) {
-  $file.slurp.split("\n" x 2, :skip-empty).map(&block).sum;
-}
