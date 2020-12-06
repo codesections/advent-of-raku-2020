@@ -1,0 +1,40 @@
+#!/usr/bin/env raku
+#| Find the seat with the highest seat ID (p1) or the single unoccupied seat (p2)
+sub MAIN(Bool :$p2=?0, Bool :$p1=!$p2) {
+    when $p1 { say lines.map({find-seat($_)<id>}).max };
+    when $p2 { given lines.map({find-seat($_)<id>}) -> @occupied-seat-ids {
+               say ~(@occupied-seat-ids.minmax (-) @occupied-seat-ids) }}
+}
+#| Evaluate the seat codes as a program.  Probbably a *very* bad idea.
+sub find-seat(Str $seat-code --> Map) {
+    my &l = sub f($r) { $r.head($r.elems div 2) }
+    my &r = sub b($r) { $r.tail($r.elems div 2) }
+    my $row  = ("&{$seat-code.lc.comb.head(7).join(' R∘&')}".EVAL)(^128).head;
+    my $seat = ("&{$seat-code.lc.comb.tail(3).join(' R∘&')}".EVAL)(^8).head;
+    { :$row, :$seat, id => ($row × 8 + $seat) }.Map
+}
+
+
+
+# Tests (run with `raku --doc -c $FILE`)
+DOC CHECK { use Test;
+    subtest 'part 1', {
+        state Int $bp-num = 1;
+        subtest { given find-seat('FBFBBFFRLR') { .<row>.&is(44, "row");
+                                                  .<seat>.&is(5, "seat");
+                                                  .<id>.&is(357, "id");}
+        },"boarding pass {$bp-num++}";
+        subtest { given find-seat('BFFFBBFRRR') { .<row>.&is(70, "row");
+                                                  .<seat>.&is(7, "seat");
+                                                  .<id>.&is(567, "id");}
+        },"boarding pass {$bp-num++}";
+        subtest { given find-seat('FFFBBBFRRR') { .<row>.&is(14, "row");
+                                                  .<seat>.&is(7, "seat");
+                                                  .<id>.&is(119, "id");}
+        },"boarding pass {$bp-num++}";
+        subtest { given find-seat('BBFFBBFRLL') { .<row>.&is(102, "row");
+                                                  .<seat>.&is(4, "seat");
+                                                  .<id>.&is(820, "id");}
+        },"boarding pass {$bp-num++}";
+    }
+}
