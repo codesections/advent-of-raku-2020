@@ -1,7 +1,7 @@
 my @groups = slurp.split(/\n\n+/);
 
 say 'A: ',
-sum @groups.map({ .subst(/\s/,'',:g).comb.Bag })».keys;
+sum @groups.map({ .comb(/\w/).Bag })».keys;
 
 say 'B: ',
-sum @groups.map: -> $ans { +$ans.subst(/\s/,'',:g).comb.Bag.grep: {.value == $ans.lines} };
+sum @groups.map: -> $ans { +$ans.comb(/\w/).Bag.grep: {.value == $ans.lines} };
