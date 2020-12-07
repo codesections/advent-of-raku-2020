@@ -1,0 +1,23 @@
+#!/usr/bin/env raku
+use v6.d;
+
+# Advent of Code 2020 day 5 -- https://adventofcode.com/2020/day/5
+
+$*OUT.out-buffer = False;   # Autoflush
+
+sub seat-id($pass)
+{
+    # Treat boarding pass code as a binary number: F and L are 0, B and R are 1
+    return $pass.trans('FBLR' => '0101').parse-base(2);
+}
+
+sub MAIN(IO() $inputfile where *.f = 'aoc05.input', Bool :v(:$verbose) = False)
+{
+    my @seat-ids = $inputfile.lines.map(&seat-id);
+
+    say $verbose ?? 'Part one: highest seat ID is ' !! '',
+        @seat-ids.max;
+
+    say $verbose ?? 'Part two: my seat ID is ' !! '',
+        @seat-ids.minmax.first: * ∉ @seat-ids;
+}

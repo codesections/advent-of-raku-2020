@@ -1,0 +1,21 @@
+#!/usr/bin/env raku
+use v6.d;
+
+# Advent of Code 2020 day 1 -- https://adventofcode.com/2020/day/1
+
+$*OUT.out-buffer = False;   # Autoflush
+
+sub MAIN(IO() $inputfile where *.f = 'aoc01.input', Bool :v(:$verbose) = False)
+{
+    for 2, 3 -> $count {
+        my @expenses = $inputfile.lines».Int;
+        for @expenses.combinations($count) -> @exp {
+            if @exp.sum == 2020 {
+                my $prod = [×] @exp;
+                say "@exp.join(' + ') = 2020; @exp.join(' × ') = $prod" if $verbose;
+                say $prod if !$verbose;
+                last;
+            }
+        }
+    }
+}

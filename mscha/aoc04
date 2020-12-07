@@ -1,0 +1,62 @@
+#!/usr/bin/env raku
+use v6.d;
+
+# Advent of Code 2020 day 4 -- https://adventofcode.com/2020/day/4
+
+$*OUT.out-buffer = False;   # Autoflush
+
+class Passport
+{
+    has Str $.data;
+
+    has %!field;
+
+    submethod TWEAK
+    {
+        for $!data ~~ m:g/(\S+)':'(\S+)/ -> $/ {
+            %!field{~$0} = ~$1;
+        }
+    }
+
+    method is-valid
+    {
+        return all(<byr iyr eyr hgt hcl ecl pid>.map: { %!field{$^f}:exists });
+    }
+
+    multi method valid('byr', $val) { $val ~~ /^\d**4$/ && 1920 ≤ $val ≤ 2002 }
+    multi method valid('iyr', $val) { $val ~~ /^\d**4$/ && 2010 ≤ $val ≤ 2020 }
+    multi method valid('eyr', $val) { $val ~~ /^\d**4$/ && 2020 ≤ $val ≤ 2030 }
+    multi method valid('hgt', $val) { ($val ~~ /^(\d+)cm$/ && 150 ≤ $0 ≤ 193) ||
+                                      ($val ~~ /^(\d+)in$/ && 59 ≤ $0 ≤ 76) }
+    multi method valid('hcl', $val) { $val ~~ /^'#'<[0..9a..f]>**6$/ }
+    multi method valid('ecl', $val) { $val ~~ /^amb|blu|brn|gry|grn|hzl|oth$/ }
+    multi method valid('pid', $val) { $val ~~ /^\d**9$/ }
+    multi method valid('cid', $val) { True }
+    multi method valid($field, $val) { die "Unknown passport field '$field'!" }
+
+    method is-valid-v2
+    {
+        return $.is-valid && all(%!field.map({ $.valid($^f.key, $^f.value) }));
+    }
+}
+
+sub MAIN(IO() $inputfile where *.f = 'aoc04.input', Bool :v(:$verbose) = False)
+{
+    my @passports = $inputfile.slurp.split(/\n\s*\n/).map(-> $data { Passport.new(:$data) });
+
+    my @valid-passports = @passports.grep(*.is-valid);
+    if ($verbose) {
+        say "Part One: {+@valid-passports} out of {+@passports} are valid.";
+    }
+    else {
+        say +@valid-passports;
+    }
+
+    my @valid-passports-v2 = @passports.grep(*.is-valid-v2);
+    if ($verbose) {
+        say "Part Two: {+@valid-passports-v2} out of {+@passports} are valid.";
+    }
+    else {
+        say +@valid-passports-v2;
+    }
+}

@@ -1,0 +1,57 @@
+#!/usr/bin/env raku
+use v6.d;
+
+# Advent of Code 2020 day 3 -- https://adventofcode.com/2020/day/3
+
+$*OUT.out-buffer = False;   # Autoflush
+
+class Forest
+{
+    has Str $.map;
+
+    has @!grid;
+    has Int $!width;
+    has Int $!height;
+
+    has Bool $.verbose = False;
+
+    submethod TWEAK
+    {
+        @!grid = $!map.comb(/\S+/)».comb;
+        $!width = +@!grid[0];
+        $!height = +@!grid;
+    }
+
+    method tree-at(Int $x, Int $y)
+    {
+        return @!grid[$y; $x % $!width] eq '#';
+    }
+
+    method traverse(Int $right, Int $down, Int $start = 0)
+    {
+        my $x = $start;
+        my $trees = 0;
+        for 0, $down ...^ $!height -> $y {
+            if $.tree-at($x,$y) {
+                say "Tree at ($x,$y)" if $!verbose;
+                $trees++;
+            }
+            else {
+                say "No tree at ($x,$y)" if $!verbose;
+            }
+            $x += $right;
+        }
+
+        return $trees;
+    }
+}
+
+sub MAIN(IO() $inputfile where *.f = 'aoc03.input', Bool :v(:$verbose) = False)
+{
+    my $forest = Forest.new(:map($inputfile.slurp), :$verbose);
+
+    say "Part One: ", $forest.traverse(3, 1);
+
+    say "Part Two: ", [×] ((1,1), (3,1), (5,1), (7,1), (1,2))
+                            .map(-> ($r, $d) { $forest.traverse($r, $d) });
+}
