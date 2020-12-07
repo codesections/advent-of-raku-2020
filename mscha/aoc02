@@ -1,0 +1,63 @@
+#!/usr/bin/env raku
+use v6.d;
+
+# Advent of Code 2020 day 2 -- https://adventofcode.com/2020/day/2
+
+$*OUT.out-buffer = False;   # Autoflush
+
+class Password
+{
+    has Str $.line;
+
+    has Str $!check-char;
+    has Int $!check-min;
+    has Int $!check-max;
+    has Str $.password;
+
+    submethod TWEAK
+    {
+        die "No password line provided" unless $!line;
+
+        if ($!line ~~ m:s/^ (\d+) '-' (\d+) (<[a..z]>)':' (<[a..z]>+) $/) {
+            $!check-min = +$0;
+            $!check-max = +$1;
+            $!check-char = ~$2;
+            $!password = ~$3;
+        }
+        else {
+            die "Invalid password line provided: " ~ $!line;
+        }
+    }
+
+    method is-valid
+    {
+        return $!check-min ≤ $!password.comb.grep($!check-char) ≤ $!check-max;
+    }
+
+    method is-valid-v2
+    {
+        return $!password.substr($!check-min-1,1) eq $!check-char ^^
+               $!password.substr($!check-max-1,1) eq $!check-char;
+    }
+}
+
+sub MAIN(IO() $inputfile where *.f = 'aoc02.input', Bool :v(:$verbose) = False)
+{
+    my @passwords = $inputfile.lines.map(-> $line { Password.new(:$line) });
+
+    my @valid-passwords = @passwords.grep: *.is-valid;
+    if ($verbose) {
+        say "Part One: {+@valid-passwords} out of {+@passwords} are valid.";
+    }
+    else {
+        say +@valid-passwords;
+    }
+
+    my @valid-passwords-v2 = @passwords.grep: *.is-valid-v2;
+    if ($verbose) {
+        say "Part Two: {+@valid-passwords-v2} out of {+@passwords} are valid.";
+    }
+    else {
+        say +@valid-passwords-v2;
+    }
+}
