@@ -1,19 +1,5 @@
 #!/usr/bin/env raku
 use v6.d;
-#use Grammar::Tracer;
-
-my $input = 'input'.IO.slurp;
-my $txt = q:to/END/;
-$input = 'light red bags contain 1 bright white bag, 2 muted yellow bags.
-dark orange bags contain 3 bright white bags, 4 muted yellow bags.
-bright white bags contain 1 shiny gold bag.
-muted yellow bags contain 2 shiny gold bags, 9 faded blue bags.
-shiny gold bags contain 1 dark olive bag, 2 vibrant plum bags.
-dark olive bags contain 3 faded blue bags, 4 dotted black bags.
-vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
-faded blue bags contain no other bags.
-dotted black bags contain no other bags.';
-END
 
 grammar Baggage {
     rule TOP      { <rule> ** 1..* }
@@ -40,15 +26,23 @@ class BaggageActions {
     }
 }
 
-my $actions = BaggageActions.new();
-Baggage.parse($input, :actions($actions));
-say "One: " ~ can_contain('shiny gold').elems;
-say "Two: " ~ bags_required('shiny gold');
+sub MAIN (
+    IO() :$input where *.f     = $?FILE.IO.sibling('input'),
+    Int  :$part where * == 1|2 = 1, # Solve Part One or Part Two?
+    --> Nil
+) {
+    my $a = BaggageActions.new();
+    Baggage.parse($input.slurp, :actions($a));
+    given $part {
+        when 1 { can_contain('shiny gold').elems.say }
+        when 2 { bags_required('shiny gold').say }
+    }
 
-sub can_contain (Str $color) {
-    $actions.outside{$color}.map({ $_ ?? ($_, can_contain($_)) !! () }).flat.Slip.unique;
-}
+    sub can_contain (Str $color) {
+        $a.outside{$color}.map({ $_ ?? ($_, can_contain($_)) !! () }).flat.Slip.unique;
+    }
 
-sub bags_required (Str $color) {
-    $actions.inside{$color}.pairs.map({ .value + .value * bags_required(.key) }).sum;
+    sub bags_required (Str $color) {
+        $a.inside{$color}.pairs.map({ .value + .value * bags_required(.key) }).sum;
+    }
 }
