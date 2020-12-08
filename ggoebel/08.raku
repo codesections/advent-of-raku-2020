@@ -32,9 +32,9 @@ class HGCActions {
 
     method ophack {
         for $!stack.grep({ .<op> ~~ /[nop | jmp]/ }) {
-            .<op> = .<op> eq 'nop' ?? 'jmp' !! 'nop';
+            .<op> = .<op> eq 'nop' ?? 'jmp' !! 'nop'; # Swap nop|jmp
             given self.exec { when .[0] == 0 { return .[1]} }
-            .<op> = .<op> eq 'nop' ?? 'jmp' !! 'nop';
+            .<op> = .<op> eq 'nop' ?? 'jmp' !! 'nop'; # Restore op
         }
     }
 }
@@ -46,14 +46,14 @@ sub MAIN (
 ) {
     my $a = HGCActions.new();
     HGC.parse($input.slurp, :actions($a));
-    given $part {
-        when 1 { say $a.exec[1] }
-        when 2 { say $a.ophack}
+    say do given $part {
+        when 1 { $a.exec[1] }
+        when 2 { $a.ophack }
     }
 }
 
-# Tests (run with `raku --doc -c [THIS_FILE_NAME]`)
-DOC CHECK {
+# Tests (run with `raku -MTest --doc -c [THIS_FILE_NAME]`)
+DOC CHECK { multi is(|) { callsame }
     my $input = q:to/§/;
         nop +0
         acc +1
@@ -69,7 +69,6 @@ DOC CHECK {
     my $a = HGCActions.new();
     HGC.parse($input, :actions($a));
 
-    say "Part One: " ~ $a.exec[1];
-    say "Part Two: " ~ $a.ophack;
+    is($a.exec[1], 5, 'Part One');
+    is($a.ophack,  8, 'Part Two');
 }
-
