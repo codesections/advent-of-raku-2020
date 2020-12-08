@@ -1,0 +1,43 @@
+#!/bin/env raku
+
+constant %ops = acc => { .<acc> += .<arg>;
+                         .<cur>++;
+                         %(.<cur acc>:p) },
+                jmp => { .<cur> += .<arg>;
+                         %(.<cur acc>:p) },
+                nop => { .<cur>++;
+                         %(.<cur acc>:p) };
+
+#| Detect infinite loops in input program
+sub MAIN(:$p2=?0, :$p1=!$p2) {
+    my @in = lines.map({.words.cache ==> {(.head, +.tail)}() });
+    when $p1 { say run-program(%(:0acc, :0cur), @in, SetHash.new).flat}
+}
+sub run-program(%state, @in, $visited-instructions) {
+    when %state<cur> ∈ $visited-instructions { %state }
+    #when %state<cur> == @in.elems { say 'ding ding ding!'; %state }
+    default {
+        $visited-instructions.set(%state<cur>);
+        my ($op, $arg) = @in[%state<cur>];
+        my %new-state = %ops{$op}(%(%state, :$arg));
+        %state, run-program(%new-state, @in, $visited-instructions);
+    }
+}
+
+DOC CHECK { use Test;
+    my @in = q:to/§/.lines.map({.words.cache ==> {(.head, +.tail)}()});
+        nop +0
+        acc +1
+        jmp +4
+        acc +3
+        jmp -3
+        acc -99
+        acc +1
+        jmp -4
+        acc +6
+        §
+    run-program(%(:0acc, :0cur), @in, SetHash.new).flat.tail<acc>.&is(5)
+
+    
+}
+
