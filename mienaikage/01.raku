@@ -1,15 +1,17 @@
 #!/usr/bin/env raku
 
 unit sub MAIN (
-  Int  :$n = 2, #= Number of entries
-  IO() :$file where *.f = $?FILE.IO.sibling('input/01.txt'), #= Path to input file
+  #| Path to input file
+  IO() :$file where *.f = ( .sibling('input/' ~ .extension('txt').basename) with $?FILE.IO ),
+  #| Part of the exercise (1 or 2)
+  Int  :$part where * == 1|2 = 1,
   Bool :$race,
   --> Nil
 );
 
 $file.slurp\
   .lines\
-  .combinations($n)\
+  .combinations($part + 1)\
   .&({ $race ?? .race !! $_ })
   .first(*.sum == 2020)
   .reduce(* × *)
