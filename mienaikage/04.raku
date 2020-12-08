@@ -24,8 +24,10 @@ grammar Passport {
 }
 
 sub MAIN (
-  IO() :$file where *.f      = $?FILE.IO.sibling('input/04.txt'), #= Path to input file
-  Int  :$part where * == 1|2 = 1, #= Part of the exercise (1 or 2)
+  #| Path to input file
+  IO() :$file where *.f = ( .sibling('input/' ~ .extension('txt').basename) with $?FILE.IO ),
+  #| Part of the exercise (1 or 2)
+  Int  :$part where * == 1|2 = 1,
   --> Nil
 ) {
   say do given $part {
