@@ -1,0 +1,181 @@
+#+SETUPFILE: ~/.emacs.d/org-templates/level-3.org
+#+HTML_LINK_UP: ../../index.html#2020
+#+OPTIONS: toc:1
+#+EXPORT_FILE_NAME: index
+#+TITLE: Day 05 - Binary Boarding
+
+* Puzzle
+- This puzzle is taken from: https://adventofcode.com/2020/day/5
+
+You board your plane only to discover a new problem: you dropped your
+boarding pass! You aren't sure which seat is yours, and all of the
+flight attendants are busy with the flood of people that suddenly made
+it through passport control.
+
+You write a quick program to use your phone's camera to scan all of the
+nearby boarding passes (your puzzle input); perhaps you can find your
+seat through process of elimination.
+
+Instead of zones or groups, this airline uses binary space partitioning
+to seat people. A seat might be specified like FBFBBFFRLR, where F means
+"front", B means "back", L means "left", and R means "right".
+
+The first 7 characters will either be F or B; these specify exactly one
+of the 128 rows on the plane (numbered 0 through 127). Each letter tells
+you which half of a region the given seat is in. Start with the whole
+list of rows; the first letter indicates whether the seat is in the
+front (0 through 63) or the back (64 through 127). The next letter
+indicates which half of that region the seat is in, and so on until
+you're left with exactly one row.
+
+For example, consider just the first seven characters of =FBFBBFFRLR=:
+
+- Start by considering the whole range, rows 0 through 127.
+- F means to take the lower half, keeping rows 0 through 63.
+- B means to take the upper half, keeping rows 32 through 63.
+- F means to take the lower half, keeping rows 32 through 47.
+- B means to take the upper half, keeping rows 40 through 47.
+- B keeps rows 44 through 47.
+- F keeps rows 44 through 45.
+- The final F keeps the lower of the two, row 44.
+
+The last three characters will be either L or R; these specify exactly
+one of the 8 columns of seats on the plane (numbered 0 through 7). The
+same process as above proceeds again, this time with only three steps. L
+means to keep the lower half, while R means to keep the upper half.
+
+For example, consider just the last 3 characters of =FBFBBFFRLR=:
+
+- Start by considering the whole range, columns 0 through 7.
+- R means to take the upper half, keeping columns 4 through 7.
+- L means to take the lower half, keeping columns 4 through 5.
+- The final R keeps the upper of the two, column 5.
+
+So, decoding =FBFBBFFRLR= reveals that it is the seat at row 44, column 5.
+
+Every seat also has a unique seat ID: multiply the row by 8, then add
+the column. In this example, the seat has ID =44 * 8 + 5 = 357=.
+
+Here are some other boarding passes:
+
+- =BFFFBBFRRR=: row 70, column 7, seat ID 567
+- =FFFBBBFRRR=: row 14, column 7, seat ID 119.
+- =BBFFBBFRLL=: row 102, column 4, seat ID 820.
+
+As a sanity check, look through your list of boarding passes. What is
+the highest seat ID on a boarding pass?
+** Part 2
+Ding! The "fasten seat belt" signs have turned on. Time to find your
+seat.
+
+It's a completely full flight, so your seat should be the only missing
+boarding pass in your list. However, there's a catch: some of the seats
+at the very front and back of the plane don't exist on this aircraft, so
+they'll be missing from your list as well.
+
+Your seat wasn't at the very front or back, though; the seats with IDs
++1 and -1 from yours will be in your list.
+
+What is the ID of your seat?
+* Solution
+=pass-seat= is a subroutine that returns the seat row, column from it's
+boarding pass. =seat-id= is a subroutine that returns the seat id from
+it's row & column number.
+
+=pass-seat= works by matching first seven characters which relate to the
+rows & then it combs over those characters to pin down on the row of
+this specific boarding pass. Same process is repeated to find the column
+number.
+#+BEGIN_SRC raku
+# seat-id returns the seat id from row & column number.
+sub seat-id (
+    Int $row, Int $column --> Int # seat id will be an integer.
+) {
+    return ($row.Int * 8) + $column[0].Int;
+}
+
+# pass-seat returns the seat row, column from boarding pass.
+sub pass-seat (
+    Str $pass --> List # row, column will be List of Int.
+) {
+    if $pass ~~ /^(<[F B]> ** 7) (<[L R]> ** 3)$/ -> $match {
+        my @rows = [0..127];
+        my @columns = [0..7];
+
+        for $match[0].comb -> $char {
+            @rows = @rows[0 .. * / 2 - 1] if $char eq 'F';
+            @rows = @rows[* / 2 .. *] if $char eq 'B';
+        }
+
+        for $match[1].comb -> $char {
+            @columns = @columns[0 .. * / 2 - 1] if $char eq 'L';
+            @columns = @columns[* / 2 .. *] if $char eq 'R';
+        }
+
+        return @rows[0].Int, @columns[0].Int;
+    }
+}
+#+END_SRC
+
+All boarding pass IDs are stored in =@ids= & it's sorted. For part 1 we
+just print the last index of =@ids= which should give us the highest ID.
+#+BEGIN_SRC raku
+# Get all boarding passes.
+my @passes = "input".IO.lines;
+my @ids;
+
+for @passes -> $pass {
+    my ($row, $column) = pass-seat($pass);
+    push @ids, seat-id($row, $column);
+}
+@ids = @ids.sort;
+
+if $part == 1 {
+    say "Part $part: " ~ @ids[*-1];
+} elsif $part == 2 {
+    ...
+}
+#+END_SRC
+** Part 2
+For part 2 we iterate over =@ids= except the last index which is skipped.
+According to the puzzle, the seat IDs next to ours will be filled. So we
+check if the next index of =@ids= is current =$id + 2=. If it is then there
+is an empty seat between these two IDs & that must be our seat.
+#+BEGIN_SRC raku
+for @ids.kv -> $key, $id {
+    next if $key == @ids.elems - 1;
+    next unless @ids[$key + 1] == $id + 2;
+    say "Part $part: " ~ $id + 1;
+}
+#+END_SRC
+* Other solution
+While solving for Part 2, I encountered an error. It was giving me wrong
+solution. I ran someone else's code against my input & found that the
+solution was off by 1. Turns out I forgot to add 1 to =$id=, I was
+printing =$id= initially.
+
+The solution was beautiful & clever, it was [[https://github.com/ggoebel][ggoebel]]'s solution in
+[[https://github.com/codesections/advent-of-raku-2020/blob/main/ggoebel/05.raku][advent-of-raku-2020]] repository. I'll share the relevant parts here, it's
+licensed under the *Artistic License 2.0*.
+
+I liked the first part, they're just replacing "B", "R" with 1 & "F",
+"L" with 0. When you convert it from decimal to binary it directly
+translates to the seat ID.
+#+BEGIN_SRC raku
+given $part {
+    when 1 {
+        say $input.lines.map({ seat_id($_) }).max;
+    }
+    when 2 {
+        my @vacant = ( (0..1023) (-) $input.lines.map({ seat_id($_) }) ).keys;
+        say @vacant.grep({ !( $_+1 ~~ any @vacant ) and !( $_-1 ~~ any @vacant) })[0];
+    }
+}
+
+sub seat_id (Str $code --> Int) {
+    return +('0b' ~ $code.trans(<F B R L> => <0 1 1 0>));
+}
+#+END_SRC
+** Update: 2020-12-08
+They've posted about it here:
+https://ergoletterbag.blogspot.com/2020/12/raku-advent-of-code-2020-day-five.html
