@@ -1,0 +1,202 @@
+#+SETUPFILE: ~/.emacs.d/org-templates/level-3.org
+#+HTML_LINK_UP: ../../index.html#2020
+#+OPTIONS: toc:1
+#+EXPORT_FILE_NAME: index
+#+TITLE: Day 07 - Handy Haversacks
+
+* Puzzle
+- This puzzle is taken from: https://adventofcode.com/2020/day/7
+
+You land at the regional airport in time for your next flight. In fact,
+it looks like you'll even have time to grab some food: all flights are
+currently delayed due to issues in luggage processing.
+
+Due to recent aviation regulations, many rules (your puzzle input) are
+being enforced about bags and their contents; bags must be color-coded
+and must contain specific quantities of other color-coded bags.
+Apparently, nobody responsible for these regulations considered how long
+they would take to enforce!
+
+For example, consider the following rules:
+#+BEGIN_SRC
+light red bags contain 1 bright white bag, 2 muted yellow bags.
+dark orange bags contain 3 bright white bags, 4 muted yellow bags.
+bright white bags contain 1 shiny gold bag.
+muted yellow bags contain 2 shiny gold bags, 9 faded blue bags.
+shiny gold bags contain 1 dark olive bag, 2 vibrant plum bags.
+dark olive bags contain 3 faded blue bags, 4 dotted black bags.
+vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
+faded blue bags contain no other bags.
+dotted black bags contain no other bags.
+#+END_SRC
+
+These rules specify the required contents for 9 bag types. In this
+example, every faded blue bag is empty, every vibrant plum bag contains
+11 bags (5 faded blue and 6 dotted black), and so on.
+
+You have a shiny gold bag. If you wanted to carry it in at least one
+other bag, how many different bag colors would be valid for the
+outermost bag? (In other words: how many colors can, eventually, contain
+at least one shiny gold bag?)
+
+In the above rules, the following options would be available to you:
+
+- A bright white bag, which can hold your shiny gold bag directly.
+- A muted yellow bag, which can hold your shiny gold bag directly, plus
+  some other bags.
+- A dark orange bag, which can hold bright white and muted yellow bags,
+  either of which could then hold your shiny gold bag.
+- A light red bag, which can hold bright white and muted yellow bags,
+  either of which could then hold your shiny gold bag.
+
+So, in this example, the number of bag colors that can eventually
+contain at least one shiny gold bag is 4.
+
+How many bag colors can eventually contain at least one shiny gold bag?
+(The list of rules is quite long; make sure you get all of it.)
+** Part 2
+It's getting pretty expensive to fly these days - not because of ticket
+prices, but because of the ridiculous number of bags you need to buy!
+
+Consider again your shiny gold bag and the rules from the above example:
+
+- faded blue bags contain 0 other bags.
+- dotted black bags contain 0 other bags.
+- vibrant plum bags contain 11 other bags: 5 faded blue bags and 6
+  dotted black bags.
+- dark olive bags contain 7 other bags: 3 faded blue bags and 4 dotted
+  black bags.
+
+So, a single shiny gold bag must contain 1 dark olive bag (and the 7
+bags within it) plus 2 vibrant plum bags (and the 11 bags within each of
+those): 1 + 1*7 + 2 + 2*11 = 32 bags!
+
+Of course, the actual rules have a small chance of going several levels
+deeper than this example; be sure to count all of the bags, even if the
+nesting becomes topologically impractical!
+
+Here's another example:
+#+BEGIN_SRC
+shiny gold bags contain 2 dark red bags.
+dark red bags contain 2 dark orange bags.
+dark orange bags contain 2 dark yellow bags.
+dark yellow bags contain 2 dark green bags.
+dark green bags contain 2 dark blue bags.
+dark blue bags contain 2 dark violet bags.
+dark violet bags contain no other bags.
+#+END_SRC
+
+In this example, a single shiny gold bag must contain 126 other bags.
+
+How many individual bags are required inside your single shiny gold bag?
+* Solution
+=%bag= holds the information for each bag specified. It holds the number
+of bags a bag holds along with their names. =$count= holds the count,
+it holds the solution to the puzzle & will be printed in the end.
+=@valid_bags= holds the name of bags, this is used later in part 1.
+#+BEGIN_SRC raku
+my %bag;
+my Int $count = 0;
+my @valid_bags = "shiny gold",;
+#+END_SRC
+
+Iterate over each line of the file & add the bag information to =%bag=.
+#+BEGIN_SRC raku
+for "input".IO.lines -> $entry {
+    if $entry ~~ /^(.*) \s bags \s contain (.*)./ -> $match {
+        my $bag = $match[0];
+        for $match[1].split(", ") {
+            if $_ ~~ /(\d) \s (.*) \s bag/ -> $contain_bag {
+                push %bag{$bag}, {
+                    count => $contain_bag[0].Int,
+                    bag => $contain_bag[1].Str
+                };
+            }
+        }
+    }
+}
+#+END_SRC
+
+For part 1, we wrap the whole thing in a while loop that runs until
+=$previous_count= is equal to =$count=. The first =for= loop within the =MAIN=
+loop is pushing bags that are to valid to =@valid_bags=. Valid bags are
+the bags that can contain at least one =shiny gold= bag.
+
+Take the case where =bag 1= holds =shiny gold= bag & =bag 2= holds =bag 1=. This
+means =bag 2= can also hold a =shiny gold= bag by holding =bag 1= so it should
+be included in the count. Now the reason we have the =MAIN= loop is that
+if the statement that says =bag 2 holds bag 1= comes before the statement
+that says =bag 1 holds shiny gold= then =bag 2= is not counted in
+=@valid_bags=.
+
+This causes the =$count= to be less than the actual count, to account for
+this we just loop indefinitely until =$previous_count= is equal to =$count=.
+=$previous_count= holds the value of =$count= at the start of =MAIN= loop. If
+the value of =$count= isn't affected then it means that we've accounted
+for all valid bags & =$count= holds the final solution.
+#+BEGIN_SRC raku
+if $part == 1 {
+    MAIN: while True {
+        my $previous_count = $count;
+        for keys %bag {
+            for @(%bag{$_}) -> $contain {
+                push @valid_bags, $_ if @valid_bags ∋ $contain<bag>;
+            }
+        }
+
+        $count = 0;
+        COUNT: for keys %bag {
+            for @(%bag{$_}) -> $contain {
+                if @valid_bags ∋ $contain<bag> {
+                    $count++;
+                    next COUNT;
+                }
+            }
+        }
+        last MAIN if $previous_count == $count;
+    }
+} elsif $part == 2 {
+    ...
+}
+say "Part $part: ", $count;
+#+END_SRC
+** Part 2
+For part 2, we will use =%bag= which was previous defined. And we define a
+subroutine: =count-bags=. =count-bags= counts the number of bags that some
+=$bag= holds. We have to pass =%bag= & =$bag= to =count-bags=. It'll also
+account for sub bags, it's an recursive function.
+
+The subroutine is easy to understand, if the bag doesn't hold any other
+bags then we return 0. If it holds other bags then we count the number
+of bags it's holding & add it to =$count=. Later we count the number of
+bags these sub bags are holding, if it's 0 then the loop exits, if not
+then we multiply the number of sub bags to the number of bags those sub
+bags are holding and add it to =$count=.
+
+This will be easier to understand with an example so take a sample input
+& follow the code manually.
+#+BEGIN_SRC raku
+# count-bags takes %bag & the bag for which we have to count the bags
+# & returns the count. Count here means the number of bags that will
+# be inside $bag.
+sub count-bags (
+    %bag, Str $bag --> Int # count will be an integer.
+) {
+    return 0 unless %bag{$bag};
+    my Int $count = 0;
+
+    for @(%bag{$bag}) {
+        my $sub_bags = count-bags(%bag, $_<bag>);
+        $count += $_<count>;
+        unless $sub_bags == 0 {
+            $count += $_<count> * $sub_bags;
+        }
+    }
+    return $count;
+}
+#+END_SRC
+
+We just run =count-bags= on 'shiny gold' & print the =$count=.
+#+BEGIN_SRC raku
+$count = count-bags(%bag, 'shiny gold');
+#+END_SRC
