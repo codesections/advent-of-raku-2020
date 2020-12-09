@@ -2,10 +2,11 @@
 #
 use v6;
 
-enum Moves (
-	go-right => +3,
-	go-down  => +1
-);
+sub go-right (Int $position is rw) {
+	$position += +3
+}
+
+my \go-down = &next;
 
 sub is-tree (Str $c is rw){
 	given $c {
@@ -14,9 +15,7 @@ sub is-tree (Str $c is rw){
 	}
 }
 
-sub make-a-move (Int $position is rw, Int $move) {
-	$position += $move
-}
+my Str $report;
 
 for gather {
 	my $position = 0;
@@ -24,11 +23,16 @@ for gather {
 	
 		my @la = $l.split("");
 
-		make-a-move($position, go-right);
 		is-tree(@la[$position]);
-
+		go-right($position) 
+			and $report ~= "\nright 3 ($position)";
+		is-tree(@la[$position]);
 		take @la;
+		go-down 
+			and $report ~= "\ndown 1 ($position)";
 	}
 } {
 	.say
 }
+
+$report.say
