@@ -1,0 +1,58 @@
+#!/bin/env raku
+#| Find weaknesses in xmas protocol
+sub MAIN(Bool :$p2=?0, Bool :$p1=!$p2) {
+    my @input = lines».Int;
+    my $target-num = @input.&find-invalid-num(preamble-len => 25);
+    when $p1 { say $target-num }
+    when $p2 { say @input.&find-range($target-num).&{ .max + .min } }
+}
+#| Find the first number that is *not* the sum of any two numbers in the input list
+sub find-invalid-num(@xmas, Int :$preamble-len --> Int) {
+    my @preceeding = (^$preamble-len).map({ @xmas[$_] => @xmas[$_] «+« @xmas[$_+1..$preamble-len-1] });
+    gather { for @xmas[$preamble-len..*] -> $next-num { 
+        # (This is more procedural/stateful than I'd like, but it's simple enough)
+        when $next-num ∉ @preceeding.map(|*.value) { take $next-num; last}
+        @preceeding.shift;
+        @preceeding = @preceeding.map( { .key => (($next-num + .key), |.value) });
+        @preceeding.push($next-num => ());
+    }}.head
+}
+#| Find the contigious range of numbers from the input that sum to the target number
+sub find-range(@in, Int $target-num) {
+    my ($start, $end) = 0,1;
+    gather while $end ≤ @in.elems { given @in[$start..$end].sum -> $curent-sum {
+        when $curent-sum <  $target-num { $end++   }
+        when $curent-sum >  $target-num { $start++ }
+        when $curent-sum == $target-num { take @in[$start..$end]; last } 
+    }}.head
+}
+
+# Tests (run with `raku --doc -c $NAME`)
+DOC CHECK { use Test;
+    my @in = q:to/§/.lines».Int;
+        35
+        20
+        15
+        25
+        47
+        40
+        62
+        55
+        65
+        95
+        102
+        117
+        150
+        182
+        127
+        219
+        299
+        277
+        309
+        576
+        §
+    my $target-num = @in.&find-invalid-num(preamble-len => 5);
+    $target-num.&is(127, 'part 1');
+    @in.&find-range($target-num).&{ .max + .min }.&is(62, 'part 2')
+}
+
