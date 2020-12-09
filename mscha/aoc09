@@ -1,0 +1,46 @@
+#!/usr/bin/env raku
+use v6.d;
+
+# Advent of Code 2020 day 9 -- https://adventofcode.com/2020/day/9
+
+$*OUT.out-buffer = False;   # Autoflush
+
+sub MAIN(IO() $inputfile where *.f = 'aoc09.input', Int $preamble-size = 25, Bool :v(:$verbose) = False)
+{
+    my @data = $inputfile.lines».Int;
+
+    # Part one
+    my $first-invalid-index = ($preamble-size ..^ @data).first(-> $i {
+            @data[$i] ∉ @data[$i-$preamble-size ..^ $i].combinations(2)».sum
+        });
+    my $invalid = @data[$first-invalid-index];
+    say $verbose ?? 'Part one: the first invalid number is ' !! '', $invalid;
+
+    # Part two - too slow (takes 4 minutes)
+    if (False) {
+        my ($from, $to) = (^@data).combinations(2).first(-> ($f, $t) {
+                @data[$f..$t].sum == $invalid;
+            });
+        my $weakness = $_.min + $_.max with @data[$from..$to];
+        say $verbose ?? 'Part two: the encryption weakness is ' !! '', $weakness;
+    }
+
+    # Part two - less elegant but much faster
+    LOOP:
+    for ^@data -> $from {
+        my $sum = @data[$from];
+        for $from ^..^ @data -> $to {
+            $sum += @data[$to];
+            given $sum <=> $invalid {
+                when Same {
+                    my $weakness = $_.min + $_.max with @data[$from..$to];
+                    say $verbose ?? 'Part two: the encryption weakness is ' !! '', $weakness;
+                    last LOOP;
+                }
+                when More {
+                    next LOOP;
+                }
+            }
+        }
+    }
+}
