@@ -32,7 +32,7 @@ sub MAIN (
 ) {
   say do given $part {
     when 1 {
-      result { Passport.parse( $_, :rule<simple> )[0]».Str }
+      result { Passport.parse( $_, :rule<simple> )[0].map(*.Str) }
     }
     when 2 {
       result { Passport.parse($_)<pairs>.map({ ~.<key> if $_ }) }
@@ -40,8 +40,8 @@ sub MAIN (
   };
 
   sub result ( &parser --> Int ) {
-    $file.slurp.split("\n" x 2, :skip-empty)».trim
-      .map(&parser)
+    $file.slurp.split("\n" x 2, :skip-empty)
+      .map(*.trim.&parser)
       .grep(* ⊇ @fields ∖ <cid>)
       .elems
     ;

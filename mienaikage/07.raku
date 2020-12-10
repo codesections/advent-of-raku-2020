@@ -23,10 +23,10 @@ sub MAIN (
     .&({
       .<color>.Str => .<contents>.map({ .<color>.Str => .<amount>.Int }).Bag
     }) with BagColors.parse($_)
-  }).Hash {
+  }).Hash, $part -> ( %bags, $_ ) {
 
-    when $part == 1 {
-      .&( method ( $elem = $color ) {
+    when 1 {
+      %bags.&( method ( $elem = $color ) {
         gather {
           for self.pairs {
             if $elem ∈ .value -> | {
@@ -38,8 +38,8 @@ sub MAIN (
       }).unique.elems
     }
 
-    when $part == 2 {
-      [+] .&( method ( $key = $color ) {
+    when 2 {
+      [+] %bags.&( method ( $key = $color ) {
         gather {
           with self{$key} {
             for .pairs {

@@ -8,11 +8,11 @@ unit sub MAIN (
   --> Nil
 );
 
-say do given { $file.slurp.split("\n" x 2).map(&^a).sum } {
-  when $part == 1 {
-    .( *.comb(/\w/).unique.elems );
+say do given { $file.slurp.split("\n" x 2).map(&^a).sum }, $part -> ( &summer, $_ ) {
+  when 1 {
+    &summer( *.comb(/\w/).unique.elems );
   }
-  when $part == 2 {
-    .( *.lines.map( *.comb(/\w/).Set ).reduce(&infix:<∩>).elems );
+  when 2 {
+    &summer( *.lines.map( *.comb(/\w/).Set ).reduce(&infix:<∩>).elems );
   }
 };

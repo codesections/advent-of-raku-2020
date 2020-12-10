@@ -1,0 +1,31 @@
+#!/usr/bin/env raku
+
+unit sub MAIN (
+  #| Path to input file
+  IO() :$file where *.f = ( .sibling('input/' ~ .extension('txt').basename) with $?FILE.IO ),
+  #| Part of the exercise (1 or 2)
+  Int  :$part where * == 1|2 = 1,
+  --> Nil
+);
+
+say do given $file.lines».Int -> @lines {
+  given @lines
+    .rotor(26 => -25)
+    .first({
+      .[0..*-2].combinations(2)».sum ∌ .[*-1]
+    }) andthen .[*-1]
+  , $part -> ( $invalid, $_ ) {
+
+    when 1 { $invalid }
+
+    when 2 {
+      [+] .[0,*-1] with (2..@lines.end)
+        .map({
+          @lines.rotor($_ => -$_+1).Slip
+        })
+        .first(*.sum == $invalid)
+        .sort
+    }
+
+  }
+}
