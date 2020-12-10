@@ -5,7 +5,6 @@ use v6;
 sub MAIN ( $file where "example1"|"example2"|"input" ) {
     my @jolts = $file.IO.lines.map(*.Int).sort;
     @jolts = [ 0, |@jolts, @jolts[*-1]+3 ];
-    my @check = (0);
     my %counts;
 
     for ( 0..(@jolts.end) ) -> $idx {
