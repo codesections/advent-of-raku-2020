@@ -16,12 +16,12 @@ sub MAIN (
 ) {
   $file.lines
     .grep({
-      given parse Password: $_ {
-        when $part == 1 {
-          .<number>[0] ≤ .<password>.comb(.<letter>) ≤ .<number>[1]
+      given Password.parse($_), $part -> ( $/, $_ ) {
+        when 1 {
+          $/<password>.chars ~~ $/<number>.minmax
         }
-        when $part == 2 {
-          .<password>.comb[.<number>.map(* - 1)].one eq .<letter>
+        when 2 {
+          $/<password>.comb[$/<number>.map(* - 1)].one eq $/<letter>
         }
       }
     })

@@ -11,7 +11,7 @@ unit sub MAIN (
 say do given $file.lines.map({
   .trans(<F L> => '0', <B R> => '1')
   .parse-base(2)
-}).List {
-  when $part == 1 { .max         }
-  when $part == 2 { .minmax ∖ $_ }
+}), $part -> ( @seats, $_ ) {
+  when 1 { @seats.max }
+  when 2 { @seats.minmax ∖ @seats }
 }
