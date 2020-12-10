@@ -8,14 +8,14 @@ unit sub MAIN (
   --> Nil
 );
 
-my @slope := @($file.lines.map(*.comb.List));
-
-say [*] gather {
-  for ( 3,1 ; 1,1 ; 5,1 ; 7,1 ; 1,2 ) -> @xy {
-    ( @xy, { @(.[] Z+ @xy) } …^ *.[1] ≥ @slope )
-      .grep({ @slope[ .[1] ; .[0] % * ] eq '#' })
-      .elems
-      .take;
-    last if $part == 1;
+say do given $file.lines.map(*.comb.List) -> @slope {
+  [*] gather {
+    for ( 3,1 ; 1,1 ; 5,1 ; 7,1 ; 1,2 ) -> @xy {
+      ( @xy, { @(.[] Z+ @xy) } …^ *.[1] ≥ @slope )
+        .grep({ @slope[ .[1] ; .[0] % * ] eq '#' })
+        .elems
+        .take;
+      last if $part == 1;
+    }
   }
 }
