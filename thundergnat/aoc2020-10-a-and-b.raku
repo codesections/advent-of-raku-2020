@@ -2,15 +2,15 @@ my @adapters = flat 0, lines».Int.sort;
 
 @adapters.push: @adapters.tail + 3;
 
-# Joltage difference between adapters. Could only 1 or 3 jolts.
-my @diffs;
+# Joltage difference between adapters. Could only be 1 or 3 jolts.
+my @jolts;
 
-for @adapters.rotor( 2 => -1 ) { @diffs[ .[1] - .[0] ]++ };
+for @adapters.rotor( 2 => -1 ) { @jolts[ .[1] - .[0] ]++ };
 
-say 'A: ', [*] @diffs[1,3];
+say 'A: ', [*] @jolts[1,3];
 
 # Runs of single jolt step adapters. Those are the only ones
-# that could possibly be removed to change the arrangement.
+# that could possibly be reconfigured to change the arrangement.
 my @runs = 0;
 
 @adapters[$_] - @adapters[$_-1] == 1 ?? @runs.[*-1]++ !! @runs.push(0) for 1 ..^ @adapters;
