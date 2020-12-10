@@ -8,7 +8,10 @@ unit sub MAIN (
   --> Nil
 );
 
-say do given { $file.slurp.split("\n" x 2).map(&^a).sum }, $part -> ( &summer, $_ ) {
+say do given
+  { $file.slurp.split("\n" x 2).map(&^a).sum },
+  $part
+-> ( &summer, $_ ) {
   when 1 {
     &summer( *.comb(/\w/).unique.elems );
   }
