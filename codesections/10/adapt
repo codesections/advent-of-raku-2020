@@ -1,27 +1,26 @@
 #!/bin/env raku
+
 #| Determine what adapters work
 sub MAIN(Bool :$p2=?0, Bool :$p1=!$p2) {
     my @in = lines».Int.sort;
-    when $p1 { (|@in, @in.max+3) «-» (0, |@in) ==> {+.grep(1) × +.grep(3)}() ==> say() }
-    when $p2 {  # TODO - clean this up
-        my $run-of = 0;
-        (|@in, @in.max+3) «-» (0, |@in)
-            ==> {((), |$_).reduce(-> $a, $b {
-                when $b == 1 { $run-of++; $a }
-                when $b == 3 { my $res = $run-of; $run-of=0;(|$a, $res) }
-                |$a, $b 
-            })}()
-            ==> {[×] .map({.&run-of})}() ==> say()
-    }
+    when $p1 { (|@in, @in.max+3) «-» (0, |@in)
+               ==> {+.grep(1) × +.grep(3)}()
+               ==> say() }
+    when $p2 { find-runs-of-consecutive-nums((|@in, @in.max+3) «-» (0, |@in)) 
+               ==> {[×] .map({tribonacci($_)})}()
+               ==> say() }
 }
+#| Calcultate the Tribonacci sequence (like the Fibonacci, but for the last 3 numbers instead of 2)
+sub tribonacci($n) { (1, 1, 2, * + * + * … ∞)[$n] }
 
-# NOTE: a run of $n consequtive numbers creates the same number of ans. as runs of ($n - 1) + ($n - 2) + ($n - 3)
-#       e.g.: 1 1 2 4 7 13 …
-#       Non-consequtive runs cause multiplication
-multi run-of(0)  { 1 }
-multi run-of(1)  { 1 }
-multi run-of(2)  { 2 }
-multi run-of($n) { run-of($n - 1) + run-of($n - 2) + run-of($n - 3) }
+#| Count the length of runs of consecutive ints (e.g. 4, 5, 6 is a run of len 3)
+sub find-runs-of-consecutive-nums(@num-Δs) {
+    my $run-len = 0;
+    gather { for @num-Δs { when 1 { $run-len++; }
+                           when 2 { die "Gaps of two are not supported" }
+                           when 3 { take $run-len;
+                                    $run-len = 0; }}}
+}
 
 # Tests (run with `raku --doc -c $NAME`)
 DOC CHECK { use Test;
@@ -61,12 +60,8 @@ DOC CHECK { use Test;
 
     @in «-» (0, |@in) ==> {+.grep(1), (+.grep(3) + 1)}()
                       ==> {$^result.&is((22, 10), 'part 1')}();
-      my $run-of = 0;
-      (|@in, @in.max+3) «-» (0, |@in) ==> {((), |$_).reduce(-> $a, $b {
-          when $b == 1 { $run-of++; $a}
-          when $b == 3 { my $res = $run-of; $run-of=0;(|$a, $res) }
-          |$a, $b 
-       }) }() ==> {[×] .map({.&run-of})}() ==> {$^result.&is(19208, 'part 2')}()
-
+  find-runs-of-consecutive-nums((|@in, @in.max+3) «-» (0, |@in)) 
+               ==> {[×] .map({tribonacci($_)})}()
+               ==> {$^result.&is(19208, 'part 2')}()
 }
 
