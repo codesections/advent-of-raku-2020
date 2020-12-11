@@ -1,0 +1,72 @@
+#!/bin/env raku
+#| Determine what adapters work
+sub MAIN(Bool :$p2=?0, Bool :$p1=!$p2) {
+    my @in = lines».Int.sort;
+    when $p1 { (|@in, @in.max+3) «-» (0, |@in) ==> {+.grep(1) × +.grep(3)}() ==> say() }
+    when $p2 {  # TODO - clean this up
+        my $run-of = 0;
+        (|@in, @in.max+3) «-» (0, |@in)
+            ==> {((), |$_).reduce(-> $a, $b {
+                when $b == 1 { $run-of++; $a }
+                when $b == 3 { my $res = $run-of; $run-of=0;(|$a, $res) }
+                |$a, $b 
+            })}()
+            ==> {[×] .map({.&run-of})}() ==> say()
+    }
+}
+
+# NOTE: a run of $n consequtive numbers creates the same number of ans. as runs of ($n - 1) + ($n - 2) + ($n - 3)
+#       e.g.: 1 1 2 4 7 13 …
+#       Non-consequtive runs cause multiplication
+multi run-of(0)  { 1 }
+multi run-of(1)  { 1 }
+multi run-of(2)  { 2 }
+multi run-of($n) { run-of($n - 1) + run-of($n - 2) + run-of($n - 3) }
+
+# Tests (run with `raku --doc -c $NAME`)
+DOC CHECK { use Test;
+  my @in = q:to/§/.lines».Int.sort;
+    28
+    33
+    18
+    42
+    31
+    14
+    46
+    20
+    48
+    47
+    24
+    23
+    49
+    45
+    19
+    38
+    39
+    11
+    1
+    32
+    25
+    35
+    8
+    17
+    7
+    9
+    4
+    2
+    34
+    10
+    3
+    §
+
+    @in «-» (0, |@in) ==> {+.grep(1), (+.grep(3) + 1)}()
+                      ==> {$^result.&is((22, 10), 'part 1')}();
+      my $run-of = 0;
+      (|@in, @in.max+3) «-» (0, |@in) ==> {((), |$_).reduce(-> $a, $b {
+          when $b == 1 { $run-of++; $a}
+          when $b == 3 { my $res = $run-of; $run-of=0;(|$a, $res) }
+          |$a, $b 
+       }) }() ==> {[×] .map({.&run-of})}() ==> {$^result.&is(19208, 'part 2')}()
+
+}
+
