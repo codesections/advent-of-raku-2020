@@ -11,6 +11,8 @@ constant FLOOR = '.';
 constant EMPTY = 'L';
 constant OCCUPIED = '#';
 
+constant DIRECTIONS = ((-1..1) X (-1..1)).grep(*.any).Array;
+
 class SeatMap
 {
     has Str $.map;
@@ -50,13 +52,10 @@ class SeatMap
     {
         given $!neighbour-strategy {
             # Immediate neighbours in all directions, if that's the strategy
-            return $.cell($y-1, $x-1), $.cell($y-1, $x), $.cell($y-1, $x+1),
-                   $.cell($y,   $x-1),                   $.cell($y,   $x+1),
-                   $.cell($y+1, $x-1), $.cell($y+1, $x), $.cell($y+1, $x+1) when IMMEDIATE;
+            return DIRECTIONS.map(-> ($dy,$dx) { $.cell($y+$dy, $x+$dx) }) when IMMEDIATE;
+
             # Visible neighbours in all directions, if that's the strategy
-            return $.chair($y,$x, -1,-1), $.chair($y,$x, -1,0), $.chair($y,$x, -1,1),
-                   $.chair($y,$x,  0,-1),                       $.chair($y,$x,  0,1),
-                   $.chair($y,$x,  1,-1), $.chair($y,$x,  1,0), $.chair($y,$x,  1,1) when VISIBLE;
+            return DIRECTIONS.map(-> ($dy,$dx) { $.chair($y,$x, $dy,$dx) }) when IMMEDIATE;
         }
     }
 
