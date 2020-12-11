@@ -55,7 +55,7 @@ class SeatMap
             return DIRECTIONS.map(-> ($dy,$dx) { $.cell($y+$dy, $x+$dx) }) when IMMEDIATE;
 
             # Visible neighbours in all directions, if that's the strategy
-            return DIRECTIONS.map(-> ($dy,$dx) { $.chair($y,$x, $dy,$dx) }) when IMMEDIATE;
+            return DIRECTIONS.map(-> ($dy,$dx) { $.chair($y,$x, $dy,$dx) }) when VISIBLE;
         }
     }
 
