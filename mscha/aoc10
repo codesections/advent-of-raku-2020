@@ -25,7 +25,7 @@ sub num-arrangements($from, $to) is cached
 {
     return 1 if $from == $to;
     return 0 if $from > $to;
-    return 0 unless $from ∈ $joltages;
+    return 0 if $from ∉ $joltages;
     return ($from ^.. $from+3).map({ num-arrangements($^n, $to) }).sum;
 }
 

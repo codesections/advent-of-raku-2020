@@ -1,0 +1,126 @@
+#!/usr/bin/env raku
+use v6.d;
+
+# Advent of Code 2020 day 11 -- https://adventofcode.com/2020/day/11
+
+$*OUT.out-buffer = False;   # Autoflush
+
+enum NeighbourStrategy <IMMEDIATE VISIBLE>;
+
+constant FLOOR = '.';
+constant EMPTY = 'L';
+constant OCCUPIED = '#';
+
+constant DIRECTIONS = ((-1..1) X (-1..1)).grep(*.any).Array;
+
+class SeatMap
+{
+    has Str $.map;
+    has Int $.max-neighbours = 3;
+    has NeighbourStrategy $.neighbour-strategy = IMMEDIATE;
+
+    has @.grid = $!map.lines.map(*.comb.Array);
+    has Int $.height = @!grid.elems;
+    has Int $.width = @!grid[0].elems;
+
+    has Int $.iteration = 0;
+    has Bool $.unchanged = False;
+
+    method Str { @!grid».join.join("\n") ~ "\n" }
+    method gist { @!grid».join.join("\n") ~ "\n" }
+
+    # Find the contents of grid position (y,x).  If outside of the grid, assume it's the floor
+    method cell(Int $y, Int $x)
+    {
+        return 0 ≤ $y < $!height && 0 ≤ $x < $!width ?? @!grid[$y;$x] !! FLOOR;
+    }
+
+    # Find the nearest chair visible from position (y,x) in direction (dy,dx), if any.
+    method chair(Int $y is copy, Int $x is copy, Int $dy, Int $dx)
+    {
+        loop {
+            $y += $dy;
+            $x += $dx;
+            return FLOOR unless 0 ≤ $y < $!height && 0 ≤ $x < $!width;
+            my $cell = $.cell($y,$x);
+            return $cell if $cell ne FLOOR;
+        }
+    }
+
+    # Return the neighbours of position (y,x).
+    method neighbours(Int $y, Int $x)
+    {
+        given $!neighbour-strategy {
+            # Immediate neighbours in all directions, if that's the strategy
+            return DIRECTIONS.map(-> ($dy,$dx) { $.cell($y+$dy, $x+$dx) }) when IMMEDIATE;
+
+            # Visible neighbours in all directions, if that's the strategy
+            return DIRECTIONS.map(-> ($dy,$dx) { $.chair($y,$x, $dy,$dx) }) when VISIBLE;
+        }
+    }
+
+    # Return the number of neighbouring occupied seats
+    method num-occupied-neighbours(Int $y, Int $x)
+    {
+        return +self.neighbours($y,$x).grep(OCCUPIED);
+    }
+
+    # Return the total number of occupied seats
+    method num-occupied
+    {
+        return +@!grid[*;*].grep(OCCUPIED);
+    }
+
+    # Find the next iteration of position (y,x)
+    method iterate-cell(Int $y, Int $x)
+    {
+        my $cell = $.cell($y,$x);
+        my $occupied = self.num-occupied-neighbours($y,$x);
+
+        # An empty seat without occupied neighbours becomes occupied
+        return OCCUPIED if $cell eq EMPTY && $occupied == 0;
+
+        # An occupied seat with too manu occupied neighbours becomes empty
+        return EMPTY if $cell eq OCCUPIED && $occupied > $!max-neighbours;
+
+        # Any other seat or empty spot remains unchanged
+        return $cell;
+    }
+
+    # Determine the next iteration of the seat grid
+    method iterate
+    {
+        my @new-grid = (^$!height).map(-> $y {
+                            (^$!width).map(-> $x {
+                                self.iterate-cell($y,$x)
+                            }).Array
+                        });
+        $!unchanged = @new-grid eqv @!grid;
+        $!iteration++;
+        @!grid = @new-grid;
+    }
+}
+
+sub MAIN(IO() $inputfile where *.f = 'aoc11.input', Bool :v(:$verbose) = False)
+{
+    # Part one
+    my $seatmap = SeatMap.new(:map($inputfile.slurp));
+    say $seatmap if $verbose;
+    until $seatmap.unchanged {
+        $seatmap.iterate;
+        say $seatmap if $verbose;
+    }
+    say "Part 1: the number of occupied seats after $seatmap.iteration() iterations is ",
+        $seatmap.num-occupied;
+
+    # Part two
+    say '' if $verbose;
+    $seatmap = SeatMap.new(:map($inputfile.slurp), :max-neighbours(4), :neighbour-strategy(VISIBLE));
+    say $seatmap if $verbose;
+    until $seatmap.unchanged {
+        $seatmap.iterate;
+        say $seatmap if $verbose;
+    }
+    say "Part 2: the number of occupied seats after $seatmap.iteration() iterations is ",
+        $seatmap.num-occupied;
+}
