@@ -1,0 +1,159 @@
+#!/bin/env raku
+sub MAIN(Bool :$p2=?0, Bool :$p1=!$p2, Bool :$v) {
+    my @in = lines».comb.».Array;
+        my @seats = @in.deepmap({ when 'L' { 10  }
+                              when '#' { 1  }
+                              when '.' { 0 }});
+    my @empty-seat = @in.deepmap(+(* eq 'L'));
+    my @taken-seat = @in.deepmap(+(* eq '#'));
+    my @steps = gather { loop { run-step(@seats); }};
+    say @steps.tail;
+}
+sub count-adjacent-seats(@taken-seat) {
+    #* TODO - extract these and avoid code repetition
+    [Z«+»] (
+        @taken-seat.map({[0, |@^row[0..^*-1]]}),
+        @taken-seat.map({[|@^row[1..*], 0]}),
+        [|@taken-seat[1..*]   ,  [0 xx +@taken-seat[1]]],
+        [|@taken-seat[1..*]   ,  [0 xx +@taken-seat[1]]].map({[0, |@^row[0..^*-1]]}),
+        [|@taken-seat[1..*]   ,  [0 xx +@taken-seat[1]]].map({[|@^row[1..*], 0]}),
+        [|@taken-seat[0..^*-1] R, [0 xx +@taken-seat[1]]],
+        [|@taken-seat[0..^*-1] R, [0 xx +@taken-seat[1]]].map({[0, |@^row[0..^*-1]]}),
+        [|@taken-seat[0..^*-1] R, [0 xx +@taken-seat[1]]].map({[|@^row[1..*], 0]}),
+        @taken-seat,
+    );
+}
+
+sub run-step(@seats) {
+    #say "round: " ~ ++$;
+    #say "@seats\n" ~ render @seats;
+    #show @seats;
+    #say "@adjacent-seats";
+    my @adjacent-seats = @seats.&count-adjacent-seats;
+    #say "mask:"; show (@seats Z«×» @adjacent-seats);
+    my @new-seats = (@seats Z«×» @adjacent-seats)
+        .deepmap({ when 0        #`(floor)                   { 0 }
+                   when $_ < 100 #`(occupied) && $_ % 10 > 4 { 10 }
+                   when $_ < 100 #`(occupied)                { 1 }
+                   when $_ ≥ 100 #`(empty)    && $_ %% 100   { 1 }
+                   when $_ ≥ 100                             { 10 }});
+    
+    #say "@new-seats\n" ~ render @new-seats;
+    take render @new-seats;
+    when @new-seats eqv @seats { take +@seats[*;*].grep(1);
+                                 last }
+    default { @seats = @new-seats; }
+}
+DOC CHECK {
+use Test;
+# my @in = q:to/§/.lines».comb».Array;
+my $in = q:to/§/;
+    L.LL.LL.LL
+    LLLLLLL.LL
+    L.L.L..L..
+    LLLL.LL.LL
+    L.LL.LL.LL
+    L.LLLLL.LL
+    ..L.L.....
+    LLLLLLLLLL
+    L.LLLLLL.L
+    L.LLLLL.LL
+    §
+
+    my @in = $in.lines».comb.».Array;
+    my @empty-seat = @in.deepmap(+(* eq 'L'));
+    my @taken-seat = @in.deepmap(+(* eq '#'));
+
+    my @seats = @in.deepmap({ when 'L' { 10  }
+                              when '#' { 1  }
+                              when '.' { 0 }});
+
+    my @steps = gather { for ^6 { run-step(@seats); }};
+    say @steps.tail;
+
+
+    @steps[0].&is(q:to/§/, "After 1 round");
+    #.##.##.##
+    #######.##
+    #.#.#..#..
+    ####.##.##
+    #.##.##.##
+    #.#####.##
+    ..#.#.....
+    ##########
+    #.######.#
+    #.#####.##
+    §
+
+    @steps[1].&is(q:to/§/);
+    #.LL.L#.##
+    #LLLLLL.L#
+    L.L.L..L..
+    #LLL.LL.L#
+    #.LL.LL.LL
+    #.LLLL#.##
+    ..L.L.....
+    #LLLLLLLL#
+    #.LLLLLL.L
+    #.#LLLL.##
+    §
+
+    @steps[2].&is(q:to/§/);
+    #.##.L#.##
+    #L###LL.L#
+    L.#.#..#..
+    #L##.##.L#
+    #.##.LL.LL
+    #.###L#.##
+    ..#.#.....
+    #L######L#
+    #.LL###L.L
+    #.#L###.##
+    §
+    
+    @steps[3].&is(q:to/§/);
+    #.#L.L#.##
+    #LLL#LL.L#
+    L.L.L..#..
+    #LLL.##.L#
+    #.LL.LL.LL
+    #.LL#L#.##
+    ..L.L.....
+    #L#LLLL#L#
+    #.LLLLLL.L
+    #.#L#L#.##
+    §
+
+    @steps[4].&is(q:to/§/); 
+    #.#L.L#.##
+    #LLL#LL.L#
+    L.#.L..#..
+    #L##.##.L#
+    #.#L.LL.LL
+    #.#L#L#.##
+    ..L.L.....
+    #L#L##L#L#
+    #.LLLLLL.L
+    #.#L#L#.##
+    §
+    
+    @steps[5].&is(q:to/§/);
+    #.#L.L#.##
+    #LLL#LL.L#
+    L.#.L..#..
+    #L##.##.L#
+    #.#L.LL.LL
+    #.#L#L#.##
+    ..L.L.....
+    #L#L##L#L#
+    #.LLLLLL.L
+    #.#L#L#.##
+    §
+
+}
+
+sub show(@a) { say ( '[ [' ~ @a.join("]\n  [") ~ '] ]')}
+sub render(@a) { @a.deepmap({ when 0  { '.' }
+                              when 1  { '#' }
+                              when 10 { 'L' }})».join.join("\n") ~ "\n"}
+
