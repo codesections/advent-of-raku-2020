@@ -5,10 +5,10 @@ my $now = now;
 # to avoid indexing troubles.
 my @layout = lines.map: { [flat '.', .comb, '.'] };
 
-my $cols = +@layout[1];
+my int $cols = +@layout[1];
 @layout.unshift: ['.' xx $cols];
 @layout.push:    ['.' xx $cols];
-my $rows = +@layout;
+my int $rows = +@layout;
 
 
 # Part 1
@@ -19,9 +19,9 @@ my @seats;
 
 loop {
     @seats = @after.map: { .clone }
-    (^$rows).race(:16batch).map: -> $r {
-        for ^$cols -> $c {
-            my $this = @seats[$r; $c];
+    (^$rows).race(:8batch).map: -> int $r {
+        for ^$cols -> int $c {
+            my str $this = @seats[$r; $c];
             next if $this eq '.';
             my $around = Bag.new( map { @seats[.[0]; .[1]] },
                 ($r-1, $c-1), ($r-1, $c), ($r-1, $c+1),
@@ -46,8 +46,8 @@ $now = now;
 
 loop {
     @seats = @after.map: { .clone }
-    (^$rows).race(:16batch).map: -> $r {
-        for ^$cols -> $c {
+    (^$rows).race(:8batch).map: -> int $r {
+        for ^$cols -> int $c {
             my $this = @seats[$r; $c];
             next if $this eq '.';
             my $around = Bag.new( map { nearest |$_ },
@@ -65,15 +65,15 @@ loop {
 say 'B: ', @seats.map( {.flat } ).Bag<#>,
     (now - $now).fmt("\t%.2f seconds");
 
-sub nearest ($row is copy, $r-incr, $col is copy, $c-incr) {
-    my $r-limit = $r-incr > 0 ?? $rows - 1 !! -1;
-    my $c-limit = $c-incr > 0 ?? $cols - 1 !! -1;
+sub nearest (int $row is copy, int $r-incr, int $col is copy, int $c-incr) {
+    my int $r-limit = $r-incr > 0 ?? $rows - 1 !! -1;
+    my int $c-limit = $c-incr > 0 ?? $cols - 1 !! -1;
     loop {
         $row += $r-incr;
         last if $row == $r-limit;
         $col += $c-incr;
         last if $col == $c-limit;
-        my $char = @seats[$row; $col];
+        my str $char = @seats[$row; $col];
         return $char if $char eq '#'|'L';
     }
     Nil
