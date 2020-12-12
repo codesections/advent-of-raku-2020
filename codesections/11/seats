@@ -1,43 +1,34 @@
 #!/bin/env raku
-enum Seat(empty => 10, occupied => 1, floor => 0);
+enum Seat(empty => :2<10>, occupied => 1, floor => 0);
 sub MAIN(Bool :$p2=?0, Bool :$p1=!$p2, Bool :$v) {
-    my @in = lines».comb.».Array;
-    my @seats = @in.deepmap({ when 'L' { empty    }
-                              when '#' { occupied }
-                              when '.' { floor    }});
-    my @steps = gather { loop { run-step(@seats); }};
-    say @steps.tail;
+    my @seats = lines».comb.».Array.deepmap({ when 'L' { empty    }
+                                              when '#' { occupied }
+                                              when '.' { floor    }});
+    when $p1 { say +gather { loop { run-step(@seats); }}.tail.indices('#') }
 }
-sub count-adjacent-seats(@taken-seat) {
-    #* TODO - extract these and avoid code repetition
-    [Z«+»] (
-        @taken-seat.map({[0, |@^row[0..^*-1]]}),
-        @taken-seat.map({[|@^row[1..*], 0]}),
-        [|@taken-seat[1..*]   ,  [0 xx +@taken-seat[1]]],
-        [|@taken-seat[1..*]   ,  [0 xx +@taken-seat[1]]].map({[0, |@^row[0..^*-1]]}),
-        [|@taken-seat[1..*]   ,  [0 xx +@taken-seat[1]]].map({[|@^row[1..*], 0]}),
-        [|@taken-seat[0..^*-1] R, [0 xx +@taken-seat[1]]],
-        [|@taken-seat[0..^*-1] R, [0 xx +@taken-seat[1]]].map({[0, |@^row[0..^*-1]]}),
-        [|@taken-seat[0..^*-1] R, [0 xx +@taken-seat[1]]].map({[|@^row[1..*], 0]}),
-        @taken-seat,
-    );
+
+sub count-adjacent-seats(@seats) {
+    $_ = @seats.deepmap(* +& 0b01);
+    [Z«+»] (.&shift(:left), .&shift(:right), .&shift(:up), .&shift(:down), .&shift(:up, :left),
+            .&shift(:up, :right), .&shift(:down, :left), .&shift(:down, :right));
+}
+
+sub shift($_, :left(:$l)=0, :right(:$r)=0, :$up=0, :down(:$d)=0) {
+    sub term:<⌀> is pure { 0 xx .head.elems }
+    [ (⌀ if $d), |.map({[(0 if $r), |@^row[0+$l..^*-$r], (0 if $l)]})[0+$up..^*-$d], (⌀ if $up) ]
 }
 
 sub run-step(@seats) {
     my @adjacent-seats = @seats.&count-adjacent-seats;
-        say render @seats; show (@seats Z«×» @adjacent-seats); 
-    my @new-seats = (@seats Z«×» @adjacent-seats)
-        .deepmap({ when floor    #`(floor)                   { floor    }
-                   when $_ < 100 #`(occupied) && $_ % 10 > 4 { empty    }
-                   when $_ < 100 #`(occupied)                { occupied }
-                   when $_ ≥ 100 #`(empty)    && $_ %% 100   { occupied }
-                   when $_ ≥ 100                             { empty    }});
-    
+    my @new-seats = (@seats Z«,» @adjacent-seats).duckmap(-> ($_, $adj) {
+                        when floor       { floor }
+                        when occupied    { $adj ≥  4 ?? empty    !! occupied }
+                        when empty       { $adj == 0 ?? occupied !! empty    }});
     take render @new-seats;
-    when @new-seats eqv @seats { take +@seats[*;*].grep(1);
-                                 last }
-    default { @seats = @new-seats; }
+    @new-seats !eqv @seats ?? (@seats = @new-seats) !! last; 
 }
+
+
 DOC CHECK {
 use Test;
 my $in = q:to/§/;
@@ -53,12 +44,29 @@ my $in = q:to/§/;
     L.LLLLL.LL
     §
 
+    #my uint @floor = (@occupied-seat-rows Z«+|» @empty-seat-rows);
+
+    # say my %dimensions = $in.lines.&{length => .elems, width => .[0].chars};
+    # say my $empty-seats    = :2($in.lines.join.trans(<. # L> => <0 0 1>));
+    # say my $occupied-seats = :2($in.lines.join.trans(<. # L> => <0 1 0>));
+    # say $empty-seats.&render-mask(%dimensions);
+    # say $occupied-seats.&render-mask(%dimensions);
+    # say (+^($occupied-seats +| $empty-seats)).&render-mask(%dimensions);
+    # sub render-mask($bin is copy, % (:$length, :$width)) {
+    #     gather { for ^$length {
+    #        take '%0*b'.sprintf($width, $bin +& (2 ** $width - 1));
+    #        $bin = $bin +> $width
+    #     }}.reverse.join("\n")
+    # }
+
+
     my @in = $in.lines».comb.».Array;
-    my @empty-seat = @in.deepmap(+(* eq 'L'));
-    my @taken-seat = @in.deepmap(+(* eq '#'));
-    my @seats = @in.deepmap({ when 'L' { 10  }
-                              when '#' { 1  }
-                              when '.' { 0 }});
+    my @seats = @in.deepmap({ when 'L' { empty  }
+                              when '#' { occupied  }
+                              when '.' { floor }});
+    my $row-len = $in.lines.head.chars;
+    my uint @occupied-seat-rows = $in.lines».trans(<. # L> => <0 1 0>).map({:2($_)});
+    my uint @empty-seat-rows    = $in.lines».trans(<. # L> => <0 0 1>).map({:2($_)});
 
     my @steps = gather { for ^6 { run-step(@seats); }};
     @steps[0].&is(q:to/§/, "After 1 round");
@@ -139,11 +147,11 @@ my $in = q:to/§/;
     #.#L#L#.##
     §
 
-    @steps.tail.&is(37, 'part 1');
+    @steps.tail.indices('#').elems.&is(37, 'part 1');
 }
 
 sub show(@a) { say ( '[ [' ~ @a.join("]\n  [") ~ '] ]')}
 sub render(@a) { @a.deepmap({ when 0  { '.' }
                               when 1  { '#' }
-                              when 10 { 'L' }})».join.join("\n") ~ "\n"}
+                              when 0b10 { 'L' }})».join.join("\n") ~ "\n"}
 
