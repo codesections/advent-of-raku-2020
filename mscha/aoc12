@@ -1,0 +1,112 @@
+#!/usr/bin/env raku
+use v6.d;
+
+# Advent of Code 2020 day 12 -- https://adventofcode.com/2020/day/12
+
+$*OUT.out-buffer = False;   # Autoflush
+
+enum Direction <N E S W>;
+enum Turn (LEFT => -1, RIGHT => 1);
+
+grammar Instructions
+{
+    rule TOP { <instr>+ }
+
+    rule instr { <dir><count> }
+
+    token dir { <[NESWLRF]> }
+    token count { \d+ }
+}
+
+role Navigator
+{
+    has Int $.x = 0;
+    has Int $.y = 0;
+
+    has Bool $.verbose = False;
+
+    method follow(Str $instructions)
+    {
+        Instructions.parse($instructions, :actions(self));
+    }
+
+    method instr($/)
+    {
+        self.move(~$/<dir>, +$<count>);
+        self.log-movement(~$/<dir>, +$<count>) if $!verbose;
+    }
+
+    method log-movement(Str $dir, Int $count)
+    {
+        say "Moved $count to $dir: position = ($!x,$!y)";
+    }
+
+    method distance(Int $x0 = 0, Int $y0 = 0) { abs($!x - $x0) + abs($!y - $y0) }
+
+    method move(Str, Int) { ... }
+    method turn (Turn, Int) { ... }
+}
+
+class Navigator1 does Navigator
+{
+    has Direction $.direction = E;
+
+    multi method move('N', Int $count) { $!y += $count }
+    multi method move('E', Int $count) { $!x += $count }
+    multi method move('S', Int $count) { $!y -= $count }
+    multi method move('W', Int $count) { $!x -= $count }
+    multi method move('F', Int $count) { self.move(~$!direction, $count) }
+    multi method move('L', Int $degrees) { self.turn(LEFT, $degrees) }
+    multi method move('R', Int $degrees) { self.turn(RIGHT, $degrees) }
+
+    method log-movement(Str $dir, Int $count)
+    {
+        say "Moved $count to $dir: position = ($!x,$!y), direction = $!direction";
+    }
+
+    method turn(Turn $t, Int $degrees)
+    {
+        $!direction = Direction(($!direction + $t × ($degrees div 90)) % 4);
+    }
+}
+
+class Navigator2 does Navigator
+{
+    has Int $.wx = 1;
+    has Int $.wy = 0;
+
+    multi method move('N', Int $count) { $!wy += $count }
+    multi method move('E', Int $count) { $!wx += $count }
+    multi method move('S', Int $count) { $!wy -= $count }
+    multi method move('W', Int $count) { $!wx -= $count }
+    multi method move('F', Int $count) { $!x += $!wx × $count; $!y += $!wy × $count }
+    multi method move('L', Int $degrees) { self.turn(LEFT, $degrees) }
+    multi method move('R', Int $degrees) { self.turn(RIGHT, $degrees) }
+
+    method log-movement(Str $dir, Int $count)
+    {
+        say "Moved $count to $dir: position = ($!x,$!y), waypoint = ($!wx,$!wy)";
+    }
+
+    method turn(Turn $t, Int $degrees)
+    {
+        given ($t × $degrees div 90) % 4 {
+            when 1 { ($!wx, $!wy) = ($!wy, -$!wx) }
+            when 2 { ($!wx, $!wy) = (-$!wx, -$!wy) }
+            when 3 { ($!wx, $!wy) = (-$!wy, $!wx) }
+        }
+    }
+}
+
+sub MAIN(IO() $inputfile where *.f = 'aoc12.input', Bool :v(:$verbose) = False)
+{
+    # Part one
+    my $nav = Navigator1.new(:$verbose);
+    $nav.follow($inputfile.slurp);
+    say "Part one: distance from starting position = $nav.distance()";
+
+    # Part two
+    my $nav2 = Navigator2.new(:$verbose, :10wx, :1wy);
+    $nav2.follow($inputfile.slurp);
+    say "Part two: distance from starting position = $nav2.distance()";
+}
