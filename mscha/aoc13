@@ -51,7 +51,7 @@ sub winning-time(Str $id-list)
     my $step = 1;
 
     # For each bus ID, find the first time that matches all earlier buses,
-    # which also matchs this one
+    # which also matches this one
     for @ids.kv -> $i, $id {
         next if $id eq 'x';
         $time = ($time, $time+$step ... *).first(-> $t { ($t + $i) %% $id });
