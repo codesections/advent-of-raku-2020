@@ -8,24 +8,18 @@ unit sub MAIN (
   --> Nil
 );
 
-say do given $file.lines».Int -> @lines {
-  given @lines
-    .rotor(26 => -25)
-    .first({
-      .[0..*-2].combinations(2)».sum ∌ .[*-1]
-    }) andthen .[*-1]
-  , $part -> ( $invalid, $_ ) {
+say do given $file.lines.map(+*) -> @lines {
+  given @lines.rotor(26 => -25).first({
+    .[0..*-2].combinations(2).map(*.sum) ∌ .[*-1]
+  }).[*-1], $part -> ( Int $invalid, $_ ) {
 
     when 1 { $invalid }
 
     when 2 {
-      [+] .[0,*-1] with (2..@lines.end)
-        .map({
-          @lines.rotor($_ => -$_+1).Slip
-        })
-        .first(*.sum == $invalid)
-        .sort
+      (2..@lines.end).map({
+        @lines.rotor($_ => -$_+1).Slip
+      }).first(*.sum == $invalid).sort.[0,*-1].sum
     }
 
   }
-}
+};
