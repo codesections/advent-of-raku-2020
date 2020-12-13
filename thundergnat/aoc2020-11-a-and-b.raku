@@ -36,7 +36,7 @@ loop {
 }
 
 say 'A: ', @seats.map( {.flat } ).Bag<#>,
-    (now - $now).fmt("\t%.2f seconds");
+    (now - $now).fmt("\t(%.2f seconds)");
 $now = now;
 
 # Part two
@@ -63,7 +63,7 @@ loop {
 }
 
 say 'B: ', @seats.map( {.flat } ).Bag<#>,
-    (now - $now).fmt("\t%.2f seconds");
+    (now - $now).fmt("\t(%.2f seconds)");
 
 sub nearest (int $row is copy, int $r-incr, int $col is copy, int $c-incr) {
     my int $r-limit = $r-incr > 0 ?? $rows - 1 !! -1;

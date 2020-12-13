@@ -1,8 +1,8 @@
 my @passport = slurp.split(/\n\n+/).map: { Hash.new(.words».split(':')) };
 
-say 'A valid: ', +@passport.grep: { ( .<cid>:exists and +$_ == 8 ) || ( .<cid>:!exists and +$_ == 7 ) }
+say 'A: ', +@passport.grep: { ( .<cid>:exists and +$_ == 8 ) || ( .<cid>:!exists and +$_ == 7 ) }
 
-say 'B valid: ', +@passport.grep: {
+say 'B: ', +@passport.grep: {
     (( .<cid>:exists and +$_ == 8 ) || ( .<cid>:!exists and +$_ == 7 ) )
     && ( 1920 <= +.<byr> <= 2002 )
     && ( 2010 <= +.<iyr> <= 2020 )

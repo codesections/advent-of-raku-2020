@@ -1,3 +1,5 @@
-my @expenses = @*ARGS[0].IO.slurp.words;
+my @expenses = words;
 
--> $part { say [*] @expenses.combinations($part).first: { ( [+] $_ ) == 2020 } } for 2, 3;
+ for 'A: ', 2, 'B: ', 3 -> $title, $part {
+      say $title, [*] @expenses.combinations($part).first: { ( [+] $_ ) == 2020 } 
+ };
