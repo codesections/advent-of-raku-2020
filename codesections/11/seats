@@ -4,11 +4,12 @@ sub MAIN(Bool :$p2=?0, Bool :$p1=!$p2, Bool :$v) {
     my @seats = lines».comb.».Array.deepmap({ when 'L' { empty    }
                                               when '#' { occupied }
                                               when '.' { floor    }});
-    when $p1 { say +gather { loop { run-step(@seats); }}.tail.indices('#') }
+    when $p1 { say run-simulation(@seats).tail.deepmap({ $_ == occupied || |Empty }).sum } 
+
 }
 
 sub count-adjacent-seats(@seats) {
-    $_ = @seats.deepmap(* +& 0b01);
+    $_ = @seats.deepmap(* +& :2<01>);
     [Z«+»] (.&shift(:left), .&shift(:right), .&shift(:up), .&shift(:down), .&shift(:up, :left),
             .&shift(:up, :right), .&shift(:down, :left), .&shift(:down, :right));
 }
@@ -18,47 +19,30 @@ sub shift($_, :left(:$l)=0, :right(:$r)=0, :$up=0, :down(:$d)=0) {
     [ (⌀ if $d), |.map({[(0 if $r), |@^row[0+$l..^*-$r], (0 if $l)]})[0+$up..^*-$d], (⌀ if $up) ]
 }
 
-sub run-step(@seats) {
+sub run-simulation(@seats) { gather { loop {
     my @adjacent-seats = @seats.&count-adjacent-seats;
     my @new-seats = (@seats Z«,» @adjacent-seats).duckmap(-> ($_, $adj) {
                         when floor       { floor }
                         when occupied    { $adj ≥  4 ?? empty    !! occupied }
                         when empty       { $adj == 0 ?? occupied !! empty    }});
-    take render @new-seats;
+    take @new-seats;
     @new-seats !eqv @seats ?? (@seats = @new-seats) !! last; 
-}
+}}}
 
 
-DOC CHECK {
-use Test;
-my $in = q:to/§/;
-    L.LL.LL.LL
-    LLLLLLL.LL
-    L.L.L..L..
-    LLLL.LL.LL
-    L.LL.LL.LL
-    L.LLLLL.LL
-    ..L.L.....
-    LLLLLLLLLL
-    L.LLLLLL.L
-    L.LLLLL.LL
-    §
-
-    #my uint @floor = (@occupied-seat-rows Z«+|» @empty-seat-rows);
-
-    # say my %dimensions = $in.lines.&{length => .elems, width => .[0].chars};
-    # say my $empty-seats    = :2($in.lines.join.trans(<. # L> => <0 0 1>));
-    # say my $occupied-seats = :2($in.lines.join.trans(<. # L> => <0 1 0>));
-    # say $empty-seats.&render-mask(%dimensions);
-    # say $occupied-seats.&render-mask(%dimensions);
-    # say (+^($occupied-seats +| $empty-seats)).&render-mask(%dimensions);
-    # sub render-mask($bin is copy, % (:$length, :$width)) {
-    #     gather { for ^$length {
-    #        take '%0*b'.sprintf($width, $bin +& (2 ** $width - 1));
-    #        $bin = $bin +> $width
-    #     }}.reverse.join("\n")
-    # }
-
+DOC CHECK { use Test;
+    my $in = q:to/§/;
+        L.LL.LL.LL
+        LLLLLLL.LL
+        L.L.L..L..
+        LLLL.LL.LL
+        L.LL.LL.LL
+        L.LLLLL.LL
+        ..L.L.....
+        LLLLLLLLLL
+        L.LLLLLL.L
+        L.LLLLL.LL
+        §
 
     my @in = $in.lines».comb.».Array;
     my @seats = @in.deepmap({ when 'L' { empty  }
@@ -68,90 +52,158 @@ my $in = q:to/§/;
     my uint @occupied-seat-rows = $in.lines».trans(<. # L> => <0 1 0>).map({:2($_)});
     my uint @empty-seat-rows    = $in.lines».trans(<. # L> => <0 0 1>).map({:2($_)});
 
-    my @steps = gather { for ^6 { run-step(@seats); }};
-    @steps[0].&is(q:to/§/, "After 1 round");
-    #.##.##.##
-    #######.##
-    #.#.#..#..
-    ####.##.##
-    #.##.##.##
-    #.#####.##
-    ..#.#.....
-    ##########
-    #.######.#
-    #.#####.##
-    §
+subtest {
+    my @steps = run-simulation(@seats); 
+    @steps[0].&render.&is(q:to/§/, "After 1 round");
+        #.##.##.##
+        #######.##
+        #.#.#..#..
+        ####.##.##
+        #.##.##.##
+        #.#####.##
+        ..#.#.....
+        ##########
+        #.######.#
+        #.#####.##
+        §
 
-    @steps[1].&is(q:to/§/);
-    #.LL.L#.##
-    #LLLLLL.L#
-    L.L.L..L..
-    #LLL.LL.L#
-    #.LL.LL.LL
-    #.LLLL#.##
-    ..L.L.....
-    #LLLLLLLL#
-    #.LLLLLL.L
-    #.#LLLL.##
-    §
+    @steps[1].&render.&is(q:to/§/, "After 2 rounds");
+        #.LL.L#.##
+        #LLLLLL.L#
+        L.L.L..L..
+        #LLL.LL.L#
+        #.LL.LL.LL
+        #.LLLL#.##
+        ..L.L.....
+        #LLLLLLLL#
+        #.LLLLLL.L
+        #.#LLLL.##
+        §
 
-    @steps[2].&is(q:to/§/);
-    #.##.L#.##
-    #L###LL.L#
-    L.#.#..#..
-    #L##.##.L#
-    #.##.LL.LL
-    #.###L#.##
-    ..#.#.....
-    #L######L#
-    #.LL###L.L
-    #.#L###.##
-    §
+    @steps[2].&render.&is(q:to/§/, "After 3 rounds");
+        #.##.L#.##
+        #L###LL.L#
+        L.#.#..#..
+        #L##.##.L#
+        #.##.LL.LL
+        #.###L#.##
+        ..#.#.....
+        #L######L#
+        #.LL###L.L
+        #.#L###.##
+        §
     
-    @steps[3].&is(q:to/§/);
-    #.#L.L#.##
-    #LLL#LL.L#
-    L.L.L..#..
-    #LLL.##.L#
-    #.LL.LL.LL
-    #.LL#L#.##
-    ..L.L.....
-    #L#LLLL#L#
-    #.LLLLLL.L
-    #.#L#L#.##
-    §
+    @steps[3].&render.&is(q:to/§/, "After 4 rounds");
+        #.#L.L#.##
+        #LLL#LL.L#
+        L.L.L..#..
+        #LLL.##.L#
+        #.LL.LL.LL
+        #.LL#L#.##
+        ..L.L.....
+        #L#LLLL#L#
+        #.LLLLLL.L
+        #.#L#L#.##
+        §
 
-    @steps[4].&is(q:to/§/); 
-    #.#L.L#.##
-    #LLL#LL.L#
-    L.#.L..#..
-    #L##.##.L#
-    #.#L.LL.LL
-    #.#L#L#.##
-    ..L.L.....
-    #L#L##L#L#
-    #.LLLLLL.L
-    #.#L#L#.##
-    §
+    @steps[4].&render.&is(q:to/§/, "After 5 rounds"); 
+        #.#L.L#.##
+        #LLL#LL.L#
+        L.#.L..#..
+        #L##.##.L#
+        #.#L.LL.LL
+        #.#L#L#.##
+        ..L.L.....
+        #L#L##L#L#
+        #.LLLLLL.L
+        #.#L#L#.##
+        §
     
-    @steps[5].&is(q:to/§/);
-    #.#L.L#.##
-    #LLL#LL.L#
-    L.#.L..#..
-    #L##.##.L#
-    #.#L.LL.LL
-    #.#L#L#.##
-    ..L.L.....
-    #L#L##L#L#
-    #.LLLLLL.L
-    #.#L#L#.##
-    §
+    @steps[5].&render.&is(q:to/§/, "After 6 rounds");
+        #.#L.L#.##
+        #LLL#LL.L#
+        L.#.L..#..
+        #L##.##.L#
+        #.#L.LL.LL
+        #.#L#L#.##
+        ..L.L.....
+        #L#L##L#L#
+        #.LLLLLL.L
+        #.#L#L#.##
+        §
 
-    @steps.tail.indices('#').elems.&is(37, 'part 1');
+    @steps.tail.deepmap({ $_ == occupied ?? 1 !! |Empty }).sum.&is(37, 'total occupied seats');
+}, 'part 1';
+
+subtest {
+    my $case1 = q:to/§/;
+        .......#.
+        ...#.....
+        .#.......
+        .........
+        ..#L....#
+        ....#....
+        .........
+        #........
+        ...#.....
+        §
+    my @c1 = $case1.lines».comb.».Array.deepmap({ when 'L' { empty    }
+                                              when '#' { occupied }
+                                              when '.' { floor    }});
+    
+        my @see-to-left = @c1.map({[.map({+?(occupied ^ff empty)})]});
+        my @see-to-right = @c1.map({[.reverse.map({+?(occupied ^ff empty)}).reverse]});
+        my @see-to-top = ([Z]  ([Z] @c1).map({[.map({+?(occupied ^ff empty)})]}));
+        #my @see-to     = ([Z]  ([Z] @c1).reverse.map({[.map({+?(occupied ^ff empty)})]}).reverse);
+        my @see-to-bot = ([Z]  ([Z] @c1).map({[.reverse.map({+?(occupied ^ff empty)}).reverse]}));
+        # my @diag = gather {for -10..10 -> $offset {
+        #            take (^10).map( -> $idx { (@c1[($idx + $offset); ($idx)] // |() )})}}
+        # sub rotate45(@a)  {
+        #     #* TODO - figure out how to exclude the Empty seq's.
+        #     my $len = max(@a.elems, @a».elems.max);
+        #     @[ (-$len..$len).map( -> $offset {
+        #         my @diag = (^$len).map(-> $idx { (@a[$idx + $offset; $idx] // |() )}); #|| |() 
+        #         @diag || |()
+        #     })] // |()}
+        #my @see:<←/↓> = (@c1.map({ |(Nil xx $++), |$_})).map({.map({ when Nil { |() }; +?(occupied ^ff empty)})});
+        dd my @see:<↑/→> = ([Z] ([Z] @c1.map({ state ($l-pad, $r-pad) = (0, +@c1);
+                                       [|(Nil xx $l-pad++), |$_, |(Nil xx ($r-pad--))]})
+                                ).map({.map({ when !.defined { Nil }; +?(occupied ^ff empty)})})).deepmap({.defined ?? $_ !! |()});
+
+        @see:<↑/→>.deepmap({ when !.defined { "     "}; $_}).join("\n").say;
+
+        note "inverse:";
+        
+        # (@c1.map({ state ($l-pad, $r-pad) =  (0, +@c1); [|(Nil xx $l-pad++), |$_, |(Nil xx ($r-pad--))]})) 
+        # .deepmap({ state $n = '01'; when !.defined { $n++ ~ "   "}; $_}).join("\n").say;
+        
+        # ([Z] @c1.map({ state ($l-pad, $r-pad) =  (0, +@c1); [|(Nil xx $l-pad++), |$_, |(Nil xx ($r-pad--))]}))
+        # .deepmap({ when !.defined { "     "}; $_}).join("\n").say;
+
+        #@c1.&rotate45.join("\n").say;  
+        note;
+        #say (@[@c1.&rotate45.&rotate45]).join("\n");
+        #dd ([Z] @[@c1.&rotate45.&rotate45]);
+        #([Z] @[@c1.&rotate45.&rotate45]).join("\n").say;  
+        #dd my @see-to = @diag.map({[.map({+?(occupied ^ff empty)})]});
+
+        note "total:";
+        ([Z«+»] (@see-to-bot, @see-to-left, @see-to-right, @see-to-top)).join("\n").say;
+        #note "to ???";
+        #@see-to.join("\n").say;
+        note "to bot";
+        @see-to-bot.join("\n").say;
+        note "to top:";
+        @see-to-top.join("\n").say;
+        note "to rgt";
+        @see-to-right.join("\n").say;
+        note "to left";
+        @see-to-left.join("\n").say;
+}, 'part 2';
 }
 
-sub show(@a) { say ( '[ [' ~ @a.join("]\n  [") ~ '] ]')}
-sub render(@a) { @a.deepmap({ when 0  { '.' }
-                              when 1  { '#' }
-                              when 0b10 { 'L' }})».join.join("\n") ~ "\n"}
+sub render(@a) { @a.deepmap({ when :2<00> { '.' }
+                              when :2<01> { '#' }
+                              when :2<10> { 'L' }})».join.join("\n") ~ "\n"}
+
 
