@@ -19,11 +19,47 @@ sub shift($_, :left(:$l)=0, :right(:$r)=0, :$up=0, :down(:$d)=0) {
     [ (⌀ if $d), |.map({[(0 if $r), |@^row[0+$l..^*-$r], (0 if $l)]})[0+$up..^*-$d], (⌀ if $up) ]
 }
 
+sub count-visible-seats(@seats) {
+    my @c1 = @seats.deepmap(* +& :2<01>);
+    my @see:<→> =   (    @c1 ==> map {[.&visable :desc]}                );
+    my @see:<←> =   (    @c1 ==> map {[.&visable :ascn]}                );
+    my @see:<↑> =   ([Z] @c1 ==> map {[.&visable :ascn]} ==> {[Z] $_}() );
+    my @see:<↓> =   ([Z] @c1 ==> map {[.&visable :desc]} ==> {[Z] $_}() );
+
+    my @see:<↑\←> = (@c1.&pad :dec ==> {[Z] $_}()  ==> map {.&visable :ascn} ==> {[Z] $_}() ==> unpad());
+    my @see:<↓\→> = (@c1.&pad :dec ==> {[Z] $_}()  ==> map {.&visable :desc} ==> {[Z] $_}() ==> unpad());
+    my @see:<↓/←> = (@c1.&pad :inc ==> {[Z] $_}()  ==> map {.&visable :desc} ==> {[Z] $_}() ==> unpad());
+    my @see:<↑/→> = (@c1.&pad :inc ==> {[Z] $_}()  ==> map {.&visable :ascn} ==> {[Z] $_}() ==> unpad());
+my @visable = ([Z«+»] (@see:<↑/→>, @see:<↓/←>, @see:<↑\←>,@see:<↓\→>,
+                 @see:<↓>, @see:<←>, @see:<→>, @see:<↑>));
+    sub unpad($_) { .deepmap({.defined ?? $_ !! |()}) }
+
+
+    multi pad(@a, Bool:D :$inc) {@a.map({[|(Nil xx $++), |$_, |(Nil xx (+$_ - $++))]})}
+    multi pad(@a, Bool:D :$dec) {@a.map({[|(Nil xx (+$_ - $++)), |$_, |(Nil xx $++)]})}
+        multi visable($_, Bool:D :$ascn) { .map({ .defined ?? +?(occupied ^ff empty) !! Nil })}
+        multi visable($_, Bool:D :$desc) { .reverse
+                                                 .map({ .defined ?? +?(occupied ^ff empty) !! Nil })
+                                                 .reverse}
+
+    @visable
+}
+
 sub run-simulation(@seats) { gather { loop {
     my @adjacent-seats = @seats.&count-adjacent-seats;
     my @new-seats = (@seats Z«,» @adjacent-seats).duckmap(-> ($_, $adj) {
                         when floor       { floor }
                         when occupied    { $adj ≥  4 ?? empty    !! occupied }
+                        when empty       { $adj == 0 ?? occupied !! empty    }});
+    take @new-seats;
+    @new-seats !eqv @seats ?? (@seats = @new-seats) !! last; 
+}}}
+
+sub run-simulation2(@seats) { gather { loop {
+    my @visable-seats = @seats.&count-visible-seats;
+    my @new-seats = (@seats Z«,» @visable-seats).duckmap(-> ($_, $adj) {
+                        when floor       { floor }
+                        when occupied    { $adj ≥  5 ?? empty    !! occupied }
                         when empty       { $adj == 0 ?? occupied !! empty    }});
     take @new-seats;
     @new-seats !eqv @seats ?? (@seats = @new-seats) !! last; 
@@ -136,6 +172,8 @@ subtest {
 }, 'part 1';
 
 subtest {
+    my @steps = run-simulation2(@seats);
+    say @steps.map(*.&render);
     my $case1 = q:to/§/;
         .......#.
         ...#.....
@@ -149,31 +187,30 @@ subtest {
         §
     my @c1 = $case1.lines».comb.».Array.deepmap({ when 'L' { empty    }
                                               when '#' { occupied }
-                                              when '.' { floor    }});
-    
-        my @see-to-left = @c1.map({[report-visable($_)]});
-        my @see-to-right = @c1.map({[.reverse.&report-visable.reverse]});
-        my @see-to-top = ([Z]  ([Z] @c1).map({[report-visable($_)]}));
-        my @see-to-bot = ([Z]  ([Z] @c1).map({[.reverse.&report-visable.reverse]}));
+                                              when '.' { floor    }
+                                              $_.uc x 6});
+    # say @c1.join("\n"); 
+    # say ([Z] @c1).reverse.join("\n"); 
+    my @see:<→> =   (    @c1 ==> map {[.&visable :desc]}                );
+    my @see:<←> =   (    @c1 ==> map {[.&visable :ascn]}                );
+    my @see:<↑> =   ([Z] @c1 ==> map {[.&visable :ascn]} ==> {[Z] $_}() );
+    my @see:<↓> =   ([Z] @c1 ==> map {[.&visable :desc]} ==> {[Z] $_}() );
 
-        my @see:<↑\←> = ([Z] ([Z] @c1.&mkdiagonal(:anti))
-                                                  .map({.reverse.&report-visable.reverse}))
-                                                  .deepmap({.defined ?? $_ !! |()});
-        my @see:<↓\→> = ([Z] ([Z] @c1.&mkdiagonal(:anti)) #* TODO - use :anti
-                                                  .map({report-visable($_)}))
-                                                  .deepmap({.defined ?? $_ !! |()});
-        my @see:<↑/→> = ([Z] ([Z] @c1.&mkdiagonal).map({report-visable($_)}))
-                                                  .deepmap({.defined ?? $_ !! |()});
-        my @see:<↓/←> = ([Z] ([Z] @c1.&mkdiagonal).map({.reverse.&report-visable.reverse}))
-                                                  .deepmap({.defined ?? $_ !! |()});
+    my @see:<↑\←> = (@c1.&pad :dec ==> {[Z] $_}()  ==> map {.&visable :ascn} ==> {[Z] $_}() ==> unpad());
+    my @see:<↓\→> = (@c1.&pad :dec ==> {[Z] $_}()  ==> map {.&visable :desc} ==> {[Z] $_}() ==> unpad());
+    my @see:<↓/←> = (@c1.&pad :inc ==> {[Z] $_}()  ==> map {.&visable :desc} ==> {[Z] $_}() ==> unpad());
+    my @see:<↑/→> = (@c1.&pad :inc ==> {[Z] $_}()  ==> map {.&visable :ascn} ==> {[Z] $_}() ==> unpad());
+    my @visable = count-visible-seats(@c1);
+    sub unpad($_) { .deepmap({.defined ?? $_ !! |()}) }
 
 
-        multi mkdiagonal(@a, Bool:D :$anti) { @a.reverse
-                                          .map({[|(Nil xx $++), |$_, |(Nil xx (+@a - $++))]})
-                                          .reverse }
-        multi mkdiagonal(@a) { @a.map({[|(Nil xx $++), |$_, |(Nil xx (+@a - $++))]})} 
-
-        sub report-visable($_) { .map({ .defined ?? +?(occupied ^ff empty) !! Nil })}
+    multi pad(@a, Bool:D :$inc) {@a.map({[|(Nil xx $++), |$_, |(Nil xx (+$_ - $++))]})}
+    multi pad(@a, Bool:D :$dec) {@a.map({[|(Nil xx (+$_ - $++)), |$_, |(Nil xx $++)]})}
+        multi visable($_, Bool:D :$ascn) { .map({ .defined ?? +?(occupied ^ff empty) !! Nil })}
+        multi visable($_, Bool:D :$desc) { .reverse
+                                                 .map({ .defined ?? +?(occupied ^ff empty) !! Nil })
+                                                 .reverse}
+        
         note '↑\←:';
         @see:<↑\←>.deepmap({ when !.defined { "     "}; $_}).join("\n").say;
         say '↓\→:';
@@ -181,18 +218,17 @@ subtest {
         note "↓/←:";
         @see:<↓/←>.deepmap({ when !.defined { "     "}; $_}).join("\n").say;
         note "total:";
-        ([Z«+»] (@see:<↑/→>, @see:<↓/←>, @see:<↑\←>,@see:<↓\→>,
-                 @see-to-bot, @see-to-left, @see-to-right, @see-to-top)).join("\n").say;
+        @visable.join("\n").say;
         note "↑/→:";
         @see:<↑/→>.deepmap({ when !.defined { "     "}; $_}).join("\n").say;
         note "to bot";
-        @see-to-bot.join("\n").say;
+        @see:<↓>.join("\n").say;
         note "to top:";
-        @see-to-top.join("\n").say;
-        note "to rgt";
-        @see-to-right.join("\n").say;
+        @see:<↑>.join("\n").say;
+        note "→:";
+        @see:<→>.join("\n").say;
         note "to left";
-        @see-to-left.join("\n").say;
+        @see:<←>.join("\n").say;
 }, 'part 2';
 }
 
