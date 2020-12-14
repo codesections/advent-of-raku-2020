@@ -151,46 +151,40 @@ subtest {
                                               when '#' { occupied }
                                               when '.' { floor    }});
     
-        my @see-to-left = @c1.map({[.map({+?(occupied ^ff empty)})]});
-        my @see-to-right = @c1.map({[.reverse.map({+?(occupied ^ff empty)}).reverse]});
-        my @see-to-top = ([Z]  ([Z] @c1).map({[.map({+?(occupied ^ff empty)})]}));
-        #my @see-to     = ([Z]  ([Z] @c1).reverse.map({[.map({+?(occupied ^ff empty)})]}).reverse);
-        my @see-to-bot = ([Z]  ([Z] @c1).map({[.reverse.map({+?(occupied ^ff empty)}).reverse]}));
-        # my @diag = gather {for -10..10 -> $offset {
-        #            take (^10).map( -> $idx { (@c1[($idx + $offset); ($idx)] // |() )})}}
-        # sub rotate45(@a)  {
-        #     #* TODO - figure out how to exclude the Empty seq's.
-        #     my $len = max(@a.elems, @a».elems.max);
-        #     @[ (-$len..$len).map( -> $offset {
-        #         my @diag = (^$len).map(-> $idx { (@a[$idx + $offset; $idx] // |() )}); #|| |() 
-        #         @diag || |()
-        #     })] // |()}
-        #my @see:<←/↓> = (@c1.map({ |(Nil xx $++), |$_})).map({.map({ when Nil { |() }; +?(occupied ^ff empty)})});
-        dd my @see:<↑/→> = ([Z] ([Z] @c1.map({ state ($l-pad, $r-pad) = (0, +@c1);
-                                       [|(Nil xx $l-pad++), |$_, |(Nil xx ($r-pad--))]})
-                                ).map({.map({ when !.defined { Nil }; +?(occupied ^ff empty)})})).deepmap({.defined ?? $_ !! |()});
+        my @see-to-left = @c1.map({[report-visable($_)]});
+        my @see-to-right = @c1.map({[.reverse.&report-visable.reverse]});
+        my @see-to-top = ([Z]  ([Z] @c1).map({[report-visable($_)]}));
+        my @see-to-bot = ([Z]  ([Z] @c1).map({[.reverse.&report-visable.reverse]}));
 
-        @see:<↑/→>.deepmap({ when !.defined { "     "}; $_}).join("\n").say;
+        my @see:<↑\←> = ([Z] ([Z] @c1.&mkdiagonal(:anti))
+                                                  .map({.reverse.&report-visable.reverse}))
+                                                  .deepmap({.defined ?? $_ !! |()});
+        my @see:<↓\→> = ([Z] ([Z] @c1.&mkdiagonal(:anti)) #* TODO - use :anti
+                                                  .map({report-visable($_)}))
+                                                  .deepmap({.defined ?? $_ !! |()});
+        my @see:<↑/→> = ([Z] ([Z] @c1.&mkdiagonal).map({report-visable($_)}))
+                                                  .deepmap({.defined ?? $_ !! |()});
+        my @see:<↓/←> = ([Z] ([Z] @c1.&mkdiagonal).map({.reverse.&report-visable.reverse}))
+                                                  .deepmap({.defined ?? $_ !! |()});
 
-        note "inverse:";
-        
-        # (@c1.map({ state ($l-pad, $r-pad) =  (0, +@c1); [|(Nil xx $l-pad++), |$_, |(Nil xx ($r-pad--))]})) 
-        # .deepmap({ state $n = '01'; when !.defined { $n++ ~ "   "}; $_}).join("\n").say;
-        
-        # ([Z] @c1.map({ state ($l-pad, $r-pad) =  (0, +@c1); [|(Nil xx $l-pad++), |$_, |(Nil xx ($r-pad--))]}))
-        # .deepmap({ when !.defined { "     "}; $_}).join("\n").say;
 
-        #@c1.&rotate45.join("\n").say;  
-        note;
-        #say (@[@c1.&rotate45.&rotate45]).join("\n");
-        #dd ([Z] @[@c1.&rotate45.&rotate45]);
-        #([Z] @[@c1.&rotate45.&rotate45]).join("\n").say;  
-        #dd my @see-to = @diag.map({[.map({+?(occupied ^ff empty)})]});
+        multi mkdiagonal(@a, Bool:D :$anti) { @a.reverse
+                                          .map({[|(Nil xx $++), |$_, |(Nil xx (+@a - $++))]})
+                                          .reverse }
+        multi mkdiagonal(@a) { @a.map({[|(Nil xx $++), |$_, |(Nil xx (+@a - $++))]})} 
 
+        sub report-visable($_) { .map({ .defined ?? +?(occupied ^ff empty) !! Nil })}
+        note '↑\←:';
+        @see:<↑\←>.deepmap({ when !.defined { "     "}; $_}).join("\n").say;
+        say '↓\→:';
+        @see:<↓\→>.deepmap({ when !.defined { "     "}; $_}).join("\n").say;
+        note "↓/←:";
+        @see:<↓/←>.deepmap({ when !.defined { "     "}; $_}).join("\n").say;
         note "total:";
-        ([Z«+»] (@see-to-bot, @see-to-left, @see-to-right, @see-to-top)).join("\n").say;
-        #note "to ???";
-        #@see-to.join("\n").say;
+        ([Z«+»] (@see:<↑/→>, @see:<↓/←>, @see:<↑\←>,@see:<↓\→>,
+                 @see-to-bot, @see-to-left, @see-to-right, @see-to-top)).join("\n").say;
+        note "↑/→:";
+        @see:<↑/→>.deepmap({ when !.defined { "     "}; $_}).join("\n").say;
         note "to bot";
         @see-to-bot.join("\n").say;
         note "to top:";
