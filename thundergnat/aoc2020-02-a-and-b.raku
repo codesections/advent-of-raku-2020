@@ -1,3 +1,5 @@
+my $now = now;
+
 my $a-valid = 0;
 my $b-valid = 0;
 
@@ -9,3 +11,4 @@ for (lines) {
 
 say "A: $a-valid";
 say "B: $b-valid";
+say 'Total: ', (now - $now).fmt("(%.2f seconds)");

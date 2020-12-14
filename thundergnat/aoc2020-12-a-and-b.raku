@@ -1,3 +1,5 @@
+my $now = now;
+
 my @moves = lines;
 
 {
@@ -15,8 +17,11 @@ my @moves = lines;
         }
     }
 
-    say 'A: ',  abs(%position<E> - %position<W>) + abs(%position<N> - %position<S>);
+    say 'A: ', abs(%position<E> - %position<W>) + abs(%position<N> - %position<S>),
+      (now - $now).fmt("\t(%.2f seconds)");
 }
+
+$now = now;
 
 {
     my %ship     =  :0x, :0y;
@@ -43,5 +48,6 @@ my @moves = lines;
         }
     }
 
-    say 'B: ', %ship<x>.abs + %ship<y>.abs;
+    say 'B: ', (%ship<x>.abs + %ship<y>.abs),
+      (now - $now).fmt("\t(%.2f seconds)");
 }

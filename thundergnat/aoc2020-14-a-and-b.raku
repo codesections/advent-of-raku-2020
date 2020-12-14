@@ -1,3 +1,5 @@
+my $now = now;
+
 my @program = lines;
 
 {
@@ -16,9 +18,11 @@ my @program = lines;
         }
     }
 
-    say 'A: ', sum %memory.values;
+    say 'A: ', %memory.values.sum, (now - $now).fmt("\t(%0.2f seconds)");
+
 }
 
+$now = now;
 
 {
     my %memory;
@@ -42,5 +46,5 @@ my @program = lines;
         }
     }
 
-    say 'B: ', sum %memory.values;
+    say 'B: ', %memory.values.sum, (now - $now).fmt("\t(%0.2f seconds)");
 }

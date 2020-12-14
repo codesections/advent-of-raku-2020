@@ -1,3 +1,5 @@
+my $now = now;
+
 my ($timestamp, $busses) = lines;
 
 my @in-service = $busses.comb(/\d+/);
@@ -6,7 +8,9 @@ my @departing = @in-service «-» $timestamp «%« @in-service;
 my $earliest  = min @departing;
 my $key = @departing.first: $earliest, :k;
 
-say 'A: ', @in-service[$key] × @departing[$key];
+say 'A: ', @in-service[$key] × @departing[$key],
+    (now - $now).fmt("\t(%.2f seconds)");
+$now = now;
 
 
 
@@ -25,4 +29,4 @@ say 'B: ',
     $skip ×= .<bus>;
     $init
   }
-).tail;
+).tail, (now - $now).fmt("\t(%.2f seconds)");
