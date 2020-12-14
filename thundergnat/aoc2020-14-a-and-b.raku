@@ -34,7 +34,7 @@ my @program = lines;
         else {
             my @mem = $op.comb(/\d+/)[0].fmt('%036b').comb;
             my str $here = (^36).map({ @mask[$_] eq '0' ?? @mem[$_] !! @mask[$_] }).join;
-            my @addr = @bits.race(:batch(1 max +@bits div 8)).map( -> @b {
+            my @addr = @bits.race(:batch(8 max +@bits div 8)).map( -> @b {
                 ~$here.subst(/'X'/, { @b[$++] }, :g).parse-base(2)
             } );
             @addr.map: { %memory{$_} = $what };
