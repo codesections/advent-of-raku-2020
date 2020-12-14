@@ -1,3 +1,5 @@
+my $now = now;
+
 my %bags = lines.map: { # meh, not elegant but it works
     next unless .chars; # skip empty lines
     my ($outer, $inner) = .split(' bags contain ');
@@ -24,8 +26,9 @@ while my $this = @search.shift {
     @matryoshka.append: @these;
 }
 
-say 'A: ', +@matryoshka.unique;
+say 'A: ', +@matryoshka.unique, (now - $now).fmt("\t(%.2f seconds)");
 
+$now = now;
 
 @search = 'shiny gold';
 my $bag-count;
@@ -37,4 +40,4 @@ while $this = @search.shift {
     }
 }
 
-say 'B: ', $bag-count;
+say 'B: ', $bag-count, (now - $now).fmt("\t(%.2f seconds)");;

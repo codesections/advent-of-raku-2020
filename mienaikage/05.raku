@@ -14,4 +14,4 @@ say do given $file.lines.map({
 }), $part -> ( @seats, $_ ) {
   when 1 { @seats.max }
   when 2 { @seats.minmax ∖ @seats }
-}
+};

@@ -8,18 +8,18 @@ grammar Passport {
   my @field-patterns = @fields.map({ '$<key>=' ~ "[$_] ':' <value=.$_>" });
 
   token TOP { <pairs=@field-patterns> ** 1..* % \s+ }
-  token byr { <[0..9]> ** 4 <?{ $/.Int ~~ 1920..2002 }> }
+  token byr { <[0..9]> ** 4 <?{ +$/ ~~ 1920..2002 }> }
   token cid { \S+ }
   token ecl { amb || blu || brn || gry || grn || hzl || oth }
-  token eyr { <[0..9]> ** 4 <?{ $/.Int ~~ 2020..2030 }> }
+  token eyr { <[0..9]> ** 4 <?{ +$/ ~~ 2020..2030 }> }
   token hcl { '#' <.xdigit> ** 6 }
   token hgt {
     [
-      || <[0..9]> ** 3 <?{ $/.Int ~~ 150 .. 193 }> 'cm'
-      || <[0..9]> ** 2 <?{ $/.Int ~~  59 ..  76 }> 'in'
+      || <[0..9]> ** 3 <?{ +$/ ~~ 150 .. 193 }> 'cm'
+      || <[0..9]> ** 2 <?{ +$/ ~~  59 ..  76 }> 'in'
     ]
   }
-  token iyr { <[0..9]> ** 4 <?{ $/.Int ~~ 2010..2020 }> }
+  token iyr { <[0..9]> ** 4 <?{ +$/ ~~ 2010..2020 }> }
   token pid { <[0..9]> ** 9 }
 }
 

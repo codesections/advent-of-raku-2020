@@ -18,4 +18,4 @@ say do given $file.lines.map(*.comb.List) -> @slope {
       last if $part == 1;
     }
   }
-}
+};
