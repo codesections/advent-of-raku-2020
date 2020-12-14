@@ -1,3 +1,5 @@
+my $now = now;
+
 my @program = lines».Int;
 
 my $pointer = 26;
@@ -9,9 +11,9 @@ while $pointer++ < +@program {
     $error = @program[$pointer] and last unless @sum;
 }
 
-say 'A: ', $error;
+say 'A: ', $error, (now - $now).fmt("\t(%.2f seconds)");
 
-
+$now = now;
 
 my $bottom = 0;
 my $top    = 1;
@@ -22,4 +24,5 @@ loop {
     last      if @program[$bottom .. $top].sum == $error;
 }
 
-say 'B: ', sum @program[$bottom .. $top].minmax.bounds;
+say 'B: ', (sum @program[$bottom .. $top].minmax.bounds),
+  (now - $now).fmt("\t(%.2f seconds)");
