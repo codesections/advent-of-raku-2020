@@ -5,8 +5,7 @@ my @conway;
 
 my int ($X,$Y,$Z,$W) = 20,20,21,20;
 
-# sigh. quick and easy to write but horribly inefficient to run
-for (^$X) X (^$Y) X (^$Z) X (^$W) -> ($x, $y, $z, $w) { @conway[$x;$y;$z;$w] = '.' };
+for (^$X) X (^$Y) X (^$Z) -> ($x, $y, $z) { @conway[$x;$y;$z] = ['.' xx $W] };
 
 my @init = lines».comb;
 
@@ -19,12 +18,15 @@ for @init -> @row {
     ++$s;
 }
 
+say "init ", (now - $now).fmt("\t(%0.2f seconds)");
+
 for ^6 {
+    my $r = now;
     my @clone;
-    (^$X).race(:2batch).map: -> $x {
-       for ^$Y -> $y {
-           for ^$Z -> $z {
-               for ^$W -> $w {
+    (^$X).race(:2batch).map: -> int $x {
+       for ^$Y -> int $y {
+           for ^$Z -> int $z {
+               for ^$W -> int $w {
                    my $active = active($x, $y, $z, $w);
                    my $this = @conway[$x;$y;$z;$w];
                    if $this eq '.' and $active == 3 {
@@ -34,13 +36,14 @@ for ^6 {
                        @clone[$x;$y;$z;$w] = '.'
                    }
                    else {
-                       @clone[$x;$y;$z;$w] = @conway[$x;$y;$z;$w];
+                       @clone[$x;$y;$z;$w] = $this;
                    }
                }
            }
-        }
+       }
     }
     @conway = @clone;
+    say "$_ ", (now - $r).fmt("\t(%0.2f seconds)");
 }
 
 say 'B: ', active(), (now - $now).fmt("\t(%0.2f seconds)");
@@ -48,10 +51,10 @@ say 'B: ', active(), (now - $now).fmt("\t(%0.2f seconds)");
 
 multi active {
     my $count = 0;
-    for ^$X -> $x {
-        for ^$Y -> $y {
-            for ^$Z -> $z {
-                for ^$W -> $w {
+    for ^$X -> int $x {
+        for ^$Y -> int $y {
+            for ^$Z -> int $z {
+                for ^$W -> int $w {
                     ++$count if @conway[$x;$y;$z;$w] eq '#'
                 }
             }
@@ -60,12 +63,12 @@ multi active {
     $count
 }
 
-multi active (Int $x, Int $y, Int $z, Int $w) {
+multi active (int $x, int $y, int $z, int $w) {
     my $count = 0;
-    for (($x - 1) max 0) .. (($x + 1) min ($X - 1)) -> $xc {
-        for (($y - 1) max 0) .. (($y + 1) min ($Y - 1)) -> $yc {
-            for (($z - 1) max 0) .. (($z + 1) min ($Z - 1)) -> $zc {
-                for (($w - 1) max 0) .. (($w + 1) min ($W - 1)) -> $wc {
+    for (($x - 1) max 0) .. (($x + 1) min ($X - 1)) -> int $xc {
+        for (($y - 1) max 0) .. (($y + 1) min ($Y - 1)) -> int $yc {
+            for (($z - 1) max 0) .. (($z + 1) min ($Z - 1)) -> int $zc {
+                for (($w - 1) max 0) .. (($w + 1) min ($W - 1)) -> int $wc {
                     next if $xc == $x and $yc == $y and $zc == $z and $wc == $w;
                     ++$count if @conway[$xc;$yc;$zc;$wc] eq '#'
                 }

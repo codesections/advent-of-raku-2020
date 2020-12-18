@@ -47,6 +47,6 @@ $now = now;
         }
     }
     my @departures = %rules.grep({ .key.starts-with: 'departure' }).map: { .value<col> };
-    say 'B: ', ([*] $mine.lines[1].comb(/\d+/)[|@departures]),
+    say 'B: ', ([*] $mine.comb(/\d+/)[|@departures]),
       (now - $now).fmt("\t(%0.2f seconds)");
 }
