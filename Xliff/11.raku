@@ -53,7 +53,7 @@ sub countOccupied ($m, $n, :$recurse ) {
   ++$count if isAdjacent($m - 1, $n + 1, :bl, :$recurse);
   ++$count if isAdjacent($m + 1, $n - 1, :tr, :$recurse);
   ++$count if isAdjacent($m + 1, $n + 1, :br, :$recurse);
-  if $*DEBUG {
+  if $*DEBUG > 2 {
     say "CO ({ $m }, { $n }) : { $count }";
     say "{ gridAt($m - 1, $n - 1) }{ gridAt($m    , $n - 1) }{ gridAt($m + 1, $n - 1) }";
     say "{ gridAt($m - 1, $n    ) }{ gridAt($m    , $n    ) }{ gridAt($m + 1, $n    ) }";
@@ -74,7 +74,7 @@ sub compareGrid(@a, @b) {
   True;
 }
 
-sub findSolution (@grid, :$recurse = False) {
+sub findSolution (@grid, $tol = 4, :$recurse = False) {
   @state.push: @grid;
   my @*g := @grid.&mdClone;
 
@@ -97,9 +97,13 @@ sub findSolution (@grid, :$recurse = False) {
         for ^$*max-m -> $mm {
           @*g[$mm; $nn] = do given @state.tail[$mm; $nn] {
             CATCH { default { .message.say; .backtrace.concise.say } }
-            when 'L' { countOccupied($mm, $nn, :$recurse) == 0 ?? '#' !! .clone }
-            when '#' { countOccupied($mm, $nn, :$recurse) >= 4 ?? 'L' !! .clone }
-            when '.' { countOccupied($mm, $nn, :$recurse); .clone }
+            when 'L' { countOccupied($mm, $nn, :$recurse) == 0 ?? '#'
+                                                               !! .clone }
+
+            when '#' { countOccupied($mm, $nn, :$recurse) >= $tol ?? 'L'
+                                                                  !! .clone }
+
+            when '.' { .clone }
             default  { die 'WTF?' }
           }
         }
@@ -119,8 +123,11 @@ sub findSolution (@grid, :$recurse = False) {
   say "Time taken: { now - INIT now }s";
 }
 
-sub MAIN (:$debug = False) {
+sub MAIN (:d(:$debug) = 0, :$dd, :$ddd) {
   my $*DEBUG = $debug;
+  $*DEBUG = 2 if $dd;
+  $*DEBUG = 3 if $ddd;
+
   for $input.lines.kv -> $k, $v {
     my $c = 0;
     @grid[$k; $c++] = $_ for $v.comb;
@@ -131,10 +138,10 @@ sub MAIN (:$debug = False) {
   # Rounds until stability: 116
   # Occupied seats: 2251
   # Time taken: 54.3005034s
-  findSolution(@grid);
+  #findSolution(@grid);
 
   # Part 2
-  #findSolution(@grid, :recurse);
+  findSolution(@grid, 5, :recurse);
 }
 
 INIT $input = 'input/11.input'.IO.slurp;
