@@ -83,8 +83,6 @@ sub findSolution (@grid, $tol = 4, :$recurse = False) {
   my ($*max-m, $*max-n) = @*g.shape;
 
   repeat {
-    # cw: As much as I like the X operator, it is SLOW
-    #     compared to the following.
     my ($p, @p) = (0);
     for ^$*max-n -> $nn {
       if $p > MAXTHREAD {
@@ -134,10 +132,6 @@ sub MAIN (:d(:$debug) = 0, :$dd, :$ddd) {
   }
 
   # Part 1
-  # Round 1 stats (non parallel):
-  # Rounds until stability: 116
-  # Occupied seats: 2251
-  # Time taken: 54.3005034s
   #findSolution(@grid);
 
   # Part 2
