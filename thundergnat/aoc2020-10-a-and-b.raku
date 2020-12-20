@@ -1,3 +1,5 @@
+my $now = now;
+
 my @adapters = flat 0, lines».Int.sort;
 
 @adapters.push: @adapters.tail + 3;
@@ -7,7 +9,9 @@ my @jolts;
 
 for @adapters.rotor( 2 => -1 ) { @jolts[ .[1] - .[0] ]++ };
 
-say 'A: ', [*] @jolts[1,3];
+say 'A: ', ([*] @jolts[1,3]), (now - $now).fmt("\t(%.2f seconds)");
+
+$now = now;
 
 # Runs of single jolt step adapters. Those are the only ones
 # that could possibly be reconfigured to change the arrangement.
@@ -17,4 +21,5 @@ my @runs = 0;
 
 # Experimentation shows no more than 6 one jolt adapters in a row.
 # Use list of values up to 7 adjacent one jolt step adapters.
-say 'B: ', [*] @runs.map: { (1,1,2,4,7,10,21)[$_] };
+say 'B: ', ([*] @runs.map: { (1,1,2,4,7,10,21)[$_] }),
+  (now - $now).fmt("\t(%.2f seconds)");

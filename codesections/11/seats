@@ -1,0 +1,225 @@
+#!/bin/env raku
+enum Seat(empty => :2<10>, occupied => 1, floor => 0);
+sub MAIN(Bool :$p2=?0, Bool :$p1=!$p2, Bool :$v) {
+    my @seats = lines».comb.».Array.deepmap({ when 'L' { empty    }
+                                              when '#' { occupied }
+                                              when '.' { floor    }});
+    when $p1 { say run-simulation(@seats, :1p).tail.deepmap({ $_ == occupied || |Empty }).sum } 
+    when $p2 { say run-simulation(@seats, :2p).tail.deepmap({ $_ == occupied || |Empty }).sum } 
+}
+
+sub run-simulation(@seats, :$p where 1|2) { gather { loop {
+    my @relevant-seats = $p == 1 ?? @seats.&count-adjacent-seats !! @seats.&count-visible-seats;
+    my $occupied-threshold = $p == 1 ?? 4 !! 5;
+    my @new-seats = (@seats Z«,» @relevant-seats).hyper.duckmap(-> ($_, $adj) {
+                        when floor       { floor }
+                        when occupied    { $adj ≥  $occupied-threshold ?? empty    !! occupied }
+                        when empty       { $adj == 0                   ?? occupied !! empty    }});
+    take @new-seats;
+    @new-seats !eqv @seats ?? (@seats = @new-seats) !! last; 
+}}}
+
+sub count-adjacent-seats(@seats) {
+    $_ = @seats.deepmap(* +& :2<01>);
+    [Z«+»] (.&shift(:left), .&shift(:right), .&shift(:up), .&shift(:down), .&shift(:up, :left),
+            .&shift(:up, :right), .&shift(:down, :left), .&shift(:down, :right));
+}
+
+sub shift($_, :left(:$l)=0, :right(:$r)=0, :$up=0, :down(:$d)=0) {
+    sub term:<⌀> is pure { 0 xx .head.elems }
+    [ (⌀ if $d), |.map({[(0 if $r), |@^row[0+$l..^*-$r], (0 if $l)]})[0+$up..^*-$d], (⌀ if $up) ]
+}
+
+sub count-visible-seats(@c1) {
+    my @see:<→> =   (    @c1 ==> map {[.&visable :desc]}                );
+    my @see:<←> =   (    @c1 ==> map {[.&visable :ascn]}                );
+    my @see:<↑> =   ([Z] @c1 ==> map {[.&visable :ascn]} ==> {[Z] $_}() );
+    my @see:<↓> =   ([Z] @c1 ==> map {[.&visable :desc]} ==> {[Z] $_}() );
+    my @see:<↑\←> = (@c1.&pad :dec ==> {[Z] $_}()  ==> map {.&visable :ascn} ==> {[Z] $_}() ==> unpad());
+    my @see:<↓\→> = (@c1.&pad :dec ==> {[Z] $_}()  ==> map {.&visable :desc} ==> {[Z] $_}() ==> unpad());
+    my @see:<↓/←> = (@c1.&pad :inc ==> {[Z] $_}()  ==> map {.&visable :desc} ==> {[Z] $_}() ==> unpad());
+    my @see:<↑/→> = (@c1.&pad :inc ==> {[Z] $_}()  ==> map {.&visable :ascn} ==> {[Z] $_}() ==> unpad());
+
+    multi pad(@a, Bool:D :$dec) {@a.map({[|(Nil xx (+$_ - $++)), |$_, |(Nil xx $++       )]})}
+    multi pad(@a, Bool:D :$inc) {@a.map({[|(Nil xx $++),         |$_, |(Nil xx (+$_ - $++))]})}
+    sub unpad($_) { .deepmap({.defined ?? $_ !! |()}) }
+    multi visable($_, Bool:D :$ascn) { .map({ .defined ?? +?(occupied ^ff empty) !! Nil })}
+    multi visable($_, Bool:D :$desc) { .reverse
+                                       .map({ .defined ?? +?(occupied ^ff empty) !! Nil })
+                                       .reverse}
+
+    ([Z«+»] (@see:<↑/→>, @see:<↓/←>, @see:<↑\←>,@see:<↓\→>, @see:<↓>, @see:<←>, @see:<→>, @see:<↑>));
+}
+
+
+
+
+DOC CHECK { use Test;
+    my $in = q:to/§/;
+        L.LL.LL.LL
+        LLLLLLL.LL
+        L.L.L..L..
+        LLLL.LL.LL
+        L.LL.LL.LL
+        L.LLLLL.LL
+        ..L.L.....
+        LLLLLLLLLL
+        L.LLLLLL.L
+        L.LLLLL.LL
+        §
+
+    my @in = $in.lines».comb.».Array;
+    my @seats = @in.deepmap({ when 'L' { empty  }
+                              when '#' { occupied  }
+                              when '.' { floor }});
+    my $row-len = $in.lines.head.chars;
+    my uint @occupied-seat-rows = $in.lines».trans(<. # L> => <0 1 0>).map({:2($_)});
+    my uint @empty-seat-rows    = $in.lines».trans(<. # L> => <0 0 1>).map({:2($_)});
+
+subtest {
+    my @steps = run-simulation(@seats, :1p); 
+    @steps[0].&render.&is(q:to/§/, "After 1 round");
+        #.##.##.##
+        #######.##
+        #.#.#..#..
+        ####.##.##
+        #.##.##.##
+        #.#####.##
+        ..#.#.....
+        ##########
+        #.######.#
+        #.#####.##
+        §
+
+    @steps[1].&render.&is(q:to/§/, "After 2 rounds");
+        #.LL.L#.##
+        #LLLLLL.L#
+        L.L.L..L..
+        #LLL.LL.L#
+        #.LL.LL.LL
+        #.LLLL#.##
+        ..L.L.....
+        #LLLLLLLL#
+        #.LLLLLL.L
+        #.#LLLL.##
+        §
+
+    @steps[2].&render.&is(q:to/§/, "After 3 rounds");
+        #.##.L#.##
+        #L###LL.L#
+        L.#.#..#..
+        #L##.##.L#
+        #.##.LL.LL
+        #.###L#.##
+        ..#.#.....
+        #L######L#
+        #.LL###L.L
+        #.#L###.##
+        §
+    
+    @steps[3].&render.&is(q:to/§/, "After 4 rounds");
+        #.#L.L#.##
+        #LLL#LL.L#
+        L.L.L..#..
+        #LLL.##.L#
+        #.LL.LL.LL
+        #.LL#L#.##
+        ..L.L.....
+        #L#LLLL#L#
+        #.LLLLLL.L
+        #.#L#L#.##
+        §
+
+    @steps[4].&render.&is(q:to/§/, "After 5 rounds"); 
+        #.#L.L#.##
+        #LLL#LL.L#
+        L.#.L..#..
+        #L##.##.L#
+        #.#L.LL.LL
+        #.#L#L#.##
+        ..L.L.....
+        #L#L##L#L#
+        #.LLLLLL.L
+        #.#L#L#.##
+        §
+    
+    @steps[5].&render.&is(q:to/§/, "After 6 rounds");
+        #.#L.L#.##
+        #LLL#LL.L#
+        L.#.L..#..
+        #L##.##.L#
+        #.#L.LL.LL
+        #.#L#L#.##
+        ..L.L.....
+        #L#L##L#L#
+        #.LLLLLL.L
+        #.#L#L#.##
+        §
+
+    @steps.tail.deepmap({ $_ == occupied ?? 1 !! |Empty }).sum.&is(37, 'total occupied seats');
+}, 'part 1';
+
+subtest {
+    my $case1 = q:to/§/;
+        .......#.
+        ...#.....
+        .#.......
+        .........
+        ..#L....#
+        ....#....
+        .........
+        #........
+        ...#.....
+        §
+    my @c1 = $case1.lines».comb.».Array.deepmap({ when 'L' { empty    }
+                                                  when '#' { occupied }
+                                                  when '.' { floor    }});
+    count-visible-seats(@c1)[4;3].&is(8, 'count visable 1');
+    my $case2 = q:to/§/;
+        .............
+        .L.L.#.#.#.#.
+        .............
+        §
+    my @c2 = $case2.lines».comb.».Array.deepmap({ when 'L' { empty    }
+                                                  when '#' { occupied }
+                                                  when '.' { floor    }});
+    count-visible-seats(@c2)[1;1].&is(0, 'count visable 2');
+    my $case3 = q:to/§/;
+        .##.##.
+        #.#.#.#
+        ##...##
+        ...L...
+        ##...##
+        #.#.#.#
+        .##.##.
+        §
+    my @c3 = $case3.lines».comb.».Array.deepmap({ when 'L' { empty    }
+                                                  when '#' { occupied }
+                                                  when '.' { floor    }});
+    count-visible-seats(@c3)[3;3].&is(0, 'count visable 3');
+
+    my @seats = @in.deepmap({ when 'L' { empty  }
+                              when '#' { occupied  }
+                              when '.' { floor }});
+    my @steps = run-simulation(@seats, :2p);
+    @steps[0].&render.&is(q:to/§/, "After 1 round");
+        #.##.##.##
+        #######.##
+        #.#.#..#..
+        ####.##.##
+        #.##.##.##
+        #.#####.##
+        ..#.#.....
+        ##########
+        #.######.#
+        #.#####.##
+        §
+
+    @steps.tail.deepmap({ $_ == occupied ?? 1 !! |Empty }).sum.&is(26, 'total occupied seats');
+}, 'part 2';
+}
+
+sub render(@a) { @a.deepmap({ when :2<00> { '.' }
+                              when :2<01> { '#' }
+                              when :2<10> { 'L' }})».join.join("\n") ~ "\n"}
+

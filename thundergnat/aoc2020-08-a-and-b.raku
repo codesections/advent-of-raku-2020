@@ -1,3 +1,5 @@
+my $now = now;
+
 my @program = lines;
 
 my $instruction-pointer = 0;
@@ -11,9 +13,9 @@ loop {
     eval $line;
 }
 
-say 'A: ', $accumulator;
+say 'A: ', $accumulator, (now - $now).fmt("\t(%.2f seconds)");
 
-
+$now = now;
 
 for @program.grep( {.contains: 'jmp'|'nop' }, :k ) -> $flip {
     $instruction-pointer = 0;
@@ -29,7 +31,8 @@ for @program.grep( {.contains: 'jmp'|'nop' }, :k ) -> $flip {
             $line = "$i $v";
         }
         eval $line;
-        say 'B: ', $accumulator and exit if $instruction-pointer + 1 > +@program;
+        say 'B: ', $accumulator, (now - $now).fmt("\t(%.2f seconds)")
+          and exit if $instruction-pointer + 1 > +@program;
     }
 }
 
