@@ -1,0 +1,156 @@
+#!/usr/bin/env raku
+use v6.d;
+
+# Advent of Code 2020 day 17 -- https://adventofcode.com/2020/day/17
+
+$*OUT.out-buffer = False;   # Autoflush
+
+class ConwayCube
+{
+    has @.grid;
+
+    has $!depth = 1;
+    has $!height = 1;
+    has $!width = 1;
+
+    has $.cycles = 0;
+
+    method initialize(Str $input)
+    {
+        @!grid = ($input.lines».comb».Array.Array,);
+        $!depth = +@!grid;
+        $!height = +@!grid[0];
+        $!width = +@!grid[0;0];
+        $!cycles = 0;
+    }
+
+    method is-active(Int $z, Int $y, Int $x)
+    {
+        return 0 ≤ $z < $!depth && 0 ≤ $y < $!height && 0 ≤ $x < $!width
+                && @!grid[$z;$y;$x] eq '#';
+    }
+
+    method count-active { @!grid[*;*;*].grep('#').elems }
+
+    method cycle {
+        @!grid = (-1 .. $!depth).map(-> $z {
+            (-1 .. $!height).map(-> $y {
+                (-1 .. $!width).map(-> $x {
+                    self.alive($z,$y,$x) ?? '#' !! '.';
+                }).Array
+            }).Array
+        }).Array;
+
+        $!depth += 2;
+        $!height += 2;
+        $!width += 2;
+        $!cycles++;
+    }
+
+    method alive(Int $z, Int $y, Int $x)
+    {
+        my $count = (($z-1..$z+1) X ($y-1..$y+1) X ($x-1..$x+1))
+                        .grep(-> @c { self.is-active(|@c) })
+                        .elems;
+        return self.is-active($z, $y, $x) ?? 3 ≤ $count ≤ 4 !! $count == 3;
+    }
+
+    method Str
+    {
+        return (^$!depth).map(-> $z {
+            "z=$z\n" ~
+            (^$!height).map(-> $y {
+                @!grid[$z;$y;*].join
+            }).join("\n")
+        }).join("\n\n");
+    }
+    method gist { self.Str }
+}
+
+class ConwayHypercube
+{
+    has @.grid;
+
+    has $!whatever = 1;     # What do you call this in the 4th dimension?
+    has $!depth = 1;
+    has $!height = 1;
+    has $!width = 1;
+
+    has $.cycles = 0;
+
+    method initialize(Str $input)
+    {
+        @!grid = (($input.lines».comb».Array.Array,),);
+        $!whatever = +@!grid;
+        $!depth = +@!grid[0];
+        $!height = +@!grid[0;0];
+        $!width = +@!grid[0;0;0];
+        $!cycles = 0;
+    }
+
+    method is-active(Int $w, Int $z, Int $y, Int $x)
+    {
+        return 0 ≤ $w < $!whatever && 0 ≤ $z < $!depth && 0 ≤ $y < $!height && 0 ≤ $x < $!width
+                && @!grid[$w;$z;$y;$x] eq '#';
+    }
+
+    method count-active { @!grid[*;*;*;*].grep('#').elems }
+
+    method cycle {
+        @!grid = (-1 .. $!whatever).map(-> $w {
+            (-1 .. $!depth).map(-> $z {
+                (-1 .. $!height).map(-> $y {
+                    (-1 .. $!width).map(-> $x {
+                        self.alive($w,$z,$y,$x) ?? '#' !! '.';
+                    }).Array
+                }).Array
+            }).Array
+        }).Array;
+
+        $!whatever += 2;
+        $!depth += 2;
+        $!height += 2;
+        $!width += 2;
+        $!cycles++;
+    }
+
+    method alive(Int $w, Int $z, Int $y, Int $x)
+    {
+        my $count = (($w-1..$w+1) X ($z-1..$z+1) X ($y-1..$y+1) X ($x-1..$x+1))
+                        .grep(-> @c { self.is-active(|@c) })
+                        .elems;
+        return self.is-active($w, $z, $y, $x) ?? 3 ≤ $count ≤ 4 !! $count == 3;
+    }
+
+    method Str { ... }
+    method gist { self.Str }
+}
+
+sub MAIN(IO() $inputfile where *.f = 'aoc17.input', Bool :v(:$verbose) = False)
+{
+    # Part one
+    my $cube = ConwayCube.new;
+    $cube.initialize($inputfile.slurp);
+    say $cube if $verbose;
+    for ^6 {
+        $cube.cycle;
+        if $verbose {
+            say '';
+            say "After $cube.cycles() cycle(s)";
+            say '';
+            say $cube;
+        }
+    }
+    say "Part one: after 6 cycles, $cube.count-active() cells are active.";
+
+    # Part two
+    # I can't be bothered to make the ConwayCube dimension variable, so I
+    # just copied it to a ConwayHypercube class and adapted.
+    # I didn't bother with verbose output for this one.
+    my $hcube = ConwayHypercube.new;
+    $hcube.initialize($inputfile.slurp);
+    for ^6 {
+        $hcube.cycle;
+    }
+    say "Part two: after 6 cycles, $hcube.count-active() cells are active.";
+}

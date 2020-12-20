@@ -1,0 +1,172 @@
+#!/usr/bin/env raku
+use v6.d;
+
+# Advent of Code 2020 day 16 -- https://adventofcode.com/2020/day/16
+
+$*OUT.out-buffer = False;   # Autoflush
+
+grammar TicketNotes
+{
+    rule TOP
+    {
+        <option>+
+        <your-ticket>
+        <nearby-tickets>
+    }
+
+    rule your-ticket
+    {
+        'your ticket:'
+        <ticket-values>
+    }
+
+    rule nearby-tickets
+    {
+        'nearby tickets:'
+        <ticket-values>+ % \n
+    }
+
+    rule option { <option-name>':' [ <option-range>+ % ' or ' ] }
+    token option-name { [ <[a..z]>+ ]+ % \h+ }
+    token option-range { <option-from> '-' <option-to> }
+    token option-from { \d+ }
+    token option-to { \d+ }
+
+    token ticket-values { <ticket-value>+ % ',' }
+    token ticket-value { \d+ }
+}
+
+class TicketParser
+{
+    has Str $.notes;            # Notes describing tickets
+
+    has %!valid-ranges;         # Posssible ranges of values per field
+    has @!ticket;               # Your ticket values
+    has @!more-tickets;         # Nearby ticket values
+
+    has @.fields;               # List of field names on a ticket
+    has %!field-pos;            # Position of each field name on the ticket
+
+    submethod TWEAK
+    {
+        # Parse the provided ticket notes
+        TicketNotes.parse($!notes, :actions(self)) or die "Invalid notes passed!\n";
+
+        # Remember the list of fields.  We don't know the order (yet), so just
+        # sort them alphabetically
+        @!fields = %!valid-ranges.keys.sort;
+    }
+
+    # Grammar action for parsed option (option name and one or more valid ranges)
+    method option($/)
+    {
+        my $option = ~$<option-name>;
+        for $<option-range> -> $r {
+            %!valid-ranges{$option}.push: { :from(+$r<option-from>), :to(+$r<option-to>) };
+        }
+    }
+
+    # Grammar action for your ticket (list of values)
+    method your-ticket($/)
+    {
+        @!ticket = $<ticket-values><ticket-value>.map(+*);
+    }
+
+    # Grammar action for nearby tickets (list of list of values)
+    method nearby-tickets($/)
+    {
+        for $<ticket-values> -> $t {
+            @!more-tickets.push: $t<ticket-value>.map(+*).List;
+        }
+    }
+
+    # Determine error rate: the sum of all values in nearby tickets that cannot
+    # belong to any field
+    method error-rate
+    {
+        return @!more-tickets[*;*].grep({ !self.may-be-valid($^v) }).sum;
+    }
+
+    # Can a value be valid, for any field?
+    multi method may-be-valid(Int $v)
+    {
+        return so any %!valid-ranges.values[*;*].map({ $^r<from> ≤ $v ≤ $^r<to> });
+    }
+
+    # Are all of these values possibly valid, for any field?
+    multi method may-be-valid(@v)
+    {
+        return so all @v.map({ self.may-be-valid($^v) });
+    }
+
+    # Is a value valid for a given field?
+    multi method may-be-valid(Str $field, Int $v)
+    {
+        return so any %!valid-ranges{$field}[*].map({ $^r<from> ≤ $v ≤ $^r<to> });
+    }
+    
+    # Determine the order of the fields on the tickets
+    method determine-field-order
+    {
+        # As far as we know now, all positions are possible for all fields
+        my %possible = @!fields.map: { $_ => (True xx @!fields).Array };
+
+        # Go through the list of nearby tickets
+        for @!more-tickets -> @t {
+            # Skip this ticket if it can't be valid
+            next unless self.may-be-valid(@t);
+
+            # For each of the values on this ticket, for each field, check if
+            # this might be a valid value for that field.
+            # If not, that field can't be in that position.
+            for @t.kv -> $i, $v {
+                for @!fields -> $f {
+                    %possible{$f}[$i] = False unless self.may-be-valid($f, $v);
+                }
+            }
+        }
+
+        # Keep checking while we have field positions to determine
+        while %possible {
+            # Find a field which has only one possible position
+            my $field = %possible.first(*.value.sum == 1).key
+                        or die "No field with unique position detected!\n";
+            my $pos = %possible{$field}.first(?*, :k);
+            %!field-pos{$field} = $pos;
+
+            # Remove that field from the list, and disallow that position
+            # for all other fields
+            %possible{$field}:delete;
+            for %possible.keys -> $f {
+                %possible{$f}[$pos] = False;
+            }
+        }
+
+        # Re-order the list of field names in their proper order
+        @!fields .= sort: { %!field-pos{$^f} };
+    }
+
+    # Return the value of a field on your ticket
+    method ticket-field(Str $field)
+    {
+        die "Don't know position of field '$field' (yet)!\n" unless %!field-pos{$field}:exists;
+        return @!ticket[%!field-pos{$field}];
+    }
+}
+
+sub MAIN(IO() $inputfile where *.f = 'aoc16.input', Bool :v(:$verbose) = False)
+{
+    my $parser = TicketParser.new(:notes($inputfile.slurp));
+
+    # Part one
+    say "Part one: the error rate is ", $parser.error-rate;
+
+    # Part two
+    $parser.determine-field-order;
+    if $verbose {
+        say "Your ticket:";
+        say " - $_: $parser.ticket-field($_)" for $parser.fields;
+    }
+    say "Part two: the product of the 'departure' fields on your ticket is ",
+        [*] $parser.fields.grep(/^departure»/).map({ $parser.ticket-field($^f) });
+}

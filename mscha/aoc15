@@ -1,0 +1,46 @@
+#!/usr/bin/env raku
+use v6.d;
+
+# Advent of Code 2020 day 15 -- https://adventofcode.com/2020/day/15
+
+$*OUT.out-buffer = False;   # Autoflush
+
+sub number-game(Int @starting, Int $nth, Bool :$verbose = False)
+{
+    my Int %seen{Int};
+    my Int $count = 0;
+    my Int $last;
+    my Int $next;
+    for @starting {
+        $last = $_;
+        $count++;
+        $next = %seen{$last} ?? $count - %seen{$last} !! 0;
+        %seen{$last} = $count;
+        say "$count: $last *" if $verbose;
+        return $last if $count == $nth;
+    }
+    loop {
+        $count++;
+        $last = $next;
+        $next = %seen{$last} ?? $count - %seen{$last} !! 0;
+        %seen{$last} = $count;
+        say "$count: $last" if $verbose;
+        return $last if $count == $nth;
+    }
+}
+
+multi sub MAIN(IO() $inputfile where *.f = 'aoc15.input', Bool :v(:$verbose) = False)
+{
+    MAIN($inputfile.slurp.comb(/\d+/), :$verbose);
+}
+
+multi sub MAIN(*@starting, Bool :v(:$verbose) = False)
+{
+    my Int @starting-nums = @starting».Int;
+
+    # Part one
+    say "Part one: the 2020th number is ", number-game(@starting-nums, 2020, :$verbose);
+
+    # Part two
+    say "Part two: the 30000000th number is ", number-game(@starting-nums, 30000000, :$verbose);
+}
