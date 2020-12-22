@@ -1,0 +1,121 @@
+#!/usr/bin/env raku
+use v6.d;
+
+# Advent of Code 2020 day 14 -- https://adventofcode.com/2020/day/14
+
+$*OUT.out-buffer = False;   # Autoflush
+
+grammar Program
+{
+    rule TOP { ^ <mask> [ <mask> | <mem> ]* $ }
+
+    rule mask { 'mask' '=' <mask-val> }
+    token mask-val { <[01X]>+ }
+
+    rule mem { 'mem['<mem-addr>']' '=' <mem-val> }
+    token mem-addr { \d+ }
+    token mem-val { \d+}
+}
+
+class PortComputer
+{
+    has Int $.bits = 36;
+    has Bool $.verbose = False;
+
+    has Str $.mask = 'X' x $!bits;
+    has Int $!mask-and = 2**$!bits - 1;
+    has Int $!mask-or = 0;
+
+    has Int @.memory is default(0);
+
+    method run(Str $source-code)
+    {
+        Program.parse($source-code, :actions(self));
+    }
+
+    method mask($/)
+    {
+        $!mask = ~$<mask-val>;
+        $!mask-and = $!mask.trans('X'=>'1').parse-base(2);
+        $!mask-or = $!mask.trans('X'=>'0').parse-base(2);
+        say "Set mask to $!mask (AND $!mask-and, OR $!mask-or)" if $!verbose;
+
+    }
+
+    method mem($/)
+    {
+        my $addr = +$<mem-addr>;
+        my $val = +$<mem-val>;
+        @!memory[$addr] = $val +& $!mask-and +| $!mask-or;
+        say "Set mem[$addr] to $val AND $!mask-and OR $!mask-or = @!memory[$addr]" if $!verbose;
+    }
+}
+
+class PortComputer-v2
+{
+    has Int $.bits = 36;
+    has Bool $.verbose = False;
+
+    has Str $.mask = '0' x $!bits;
+    has Int @!mask-ones = ();
+    has Int @!mask-xes = ();
+
+    has Int %.memory is default(0);
+
+    method run(Str $source-code)
+    {
+        Program.parse($source-code, :actions(self));
+    }
+
+    method to-bits(Int $val, Int $num-bits = $!bits)
+    {
+        my @b = $val.base(2).comb;
+        @b.prepend('0' xx $num-bits - @b);
+        return @b;
+    }
+
+    method masked-values(Int $val)
+    {
+        gather {
+            my @val-bits = self.to-bits($val);
+            @val-bits[$_] = '1' for @!mask-ones;
+            for ^2**@!mask-xes -> $i {
+                my @i-bits = self.to-bits($i, +@!mask-xes);
+                @val-bits[@!mask-xes] = @i-bits;
+                take @val-bits.join.parse-base(2);
+            }
+        }
+    }
+
+    method mask($/)
+    {
+        $!mask = ~$<mask-val>;
+        @!mask-ones = $!mask.comb.grep('1', :k);
+        @!mask-xes = $!mask.comb.grep('X', :k);
+        say "Set mask to $!mask ({+@!mask-ones} ones; {+@!mask-xes} Xes)" if $!verbose;
+
+    }
+
+    method mem($/)
+    {
+        my @addr = self.masked-values(+$<mem-addr>);
+        my $val = +$<mem-val>;
+        for @addr -> $a {
+            %!memory{$a} = $val;
+        }
+        say "Set mem[({+@addr} addresses)] to $val" if $!verbose;
+    }
+}
+
+sub MAIN(IO() $inputfile where *.f = 'aoc14.input', Bool :v(:$verbose) = False)
+{
+    # Part one
+    my $computer = PortComputer.new(:36bits, :$verbose);
+    $computer.run($inputfile.slurp);
+    say "Part one: the sum of all memory values = $computer.memory.sum()";
+
+    # Part two
+    my $computer2 = PortComputer-v2.new(:36bits, :$verbose);
+    $computer2.run($inputfile.slurp);
+    say "Part two: the sum of all memory values = $computer2.memory.values.sum()";
+}

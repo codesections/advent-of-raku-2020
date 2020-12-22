@@ -66,7 +66,7 @@ class Navigator1 does Navigator
 
     method turn(Turn $t, Int $degrees)
     {
-        $!direction = Direction(($!direction + $t × ($degrees div 90)) % 4);
+        $!direction = Direction(($!direction + $t × $degrees div 90) % 4);
     }
 }
 
