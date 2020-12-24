@@ -8,9 +8,9 @@ my %tiles;
 
 %tiles{sum %dir{|$_}}++ for @list;
 
-say "A: ", (+%tiles.grep: *.value % 2), (now - $now).fmt("\t(%.2f seconds)");
-
 %tiles{$_}:delete for (%tiles.grep: *.value %% 2)».key;
+
+say "A: ", (+%tiles), (now - $now).fmt("\t(%.2f seconds)");
 
 for ^100 {
     my %adjacent;
@@ -27,10 +27,9 @@ for ^100 {
             %flipped{$tile.key} = 1 if $tile.value == 2
         }
     }
-    %flipped{$_}:delete for (%flipped.grep: *.value %% 2)».key;
     %tiles = %flipped;
 
-    print "\b" x 40, "Day {1 + $_}:  ", +%tiles;
+    print "\b" x 40, "Day {1 + $_}  ", +%tiles;
 }
 
 print "\b" x 40;
