@@ -1,0 +1,56 @@
+#!/bin/env raku
+#| The operations in the language of our input program
+constant %ops   =  acc => { .<acc> += .<arg>;
+#`( constant to )           .<cur>++;
+#`( allow use   )           %(.<cur acc>:p) },
+#`( in the DOC  )  jmp => { .<cur> += .<arg>;
+#`( CHECK tests )           %(.<cur acc>:p) },
+                   nop => { .<cur>++;
+                            %(.<cur acc>:p) };
+
+#| Detect (p1) and correct (p2) infinite loops in input program
+sub MAIN(:$p2=?0, :$p1=!$p2) {
+    my @in = lines.map({.words.cache ==> {(.head, +.tail)}() });
+    when $p1 { say run-program(@in).tail<acc> }
+    when $p2 { race for create-alt-programs(@in) {
+        given run-program($_) { when .tail eq 'exit' { .[*-2]<acc>.say; exit }
+                                # `exit`ing abruptly is hacky, but 3× faster
+    }}}
+}
+#| Runs the input program until it either terminates or encounters as infinite loop
+sub run-program(@in, $visited=SetHash.new, :$cur=0, :$acc=0) {
+    when $cur ∈ $visited   { {:$cur, :$acc}, }
+    when $cur == @in.elems { {:$cur, :$acc}, 'exit' }
+    default                { $visited.set($cur);
+                             my ($op, $arg) = @in[$cur];
+                             my %new-state = %ops{$op}({:$cur, :$acc, :$arg});
+                             {:$cur, :$acc}, |run-program(|%new-state, @in, $visited) }
+}
+#| Create variants of a program that differ only by fliping a `jmp` op into a `nop` or the reverse
+sub create-alt-programs(@original) {
+    gather { for ^@original.elems -> $i { given @original[$i].head {
+        when 'jmp' | 'nop' { given @original.clone {
+             .[$i] = (.[$i].head eq 'nop' ?? 'jmp' !! 'nop', .[$i].tail);
+             .take }}
+    }}}}
+
+DOC CHECK { use Test; plan 2;
+    my @in = q:to/§/.lines.map({.words.cache ==> {(.head, +.tail)}()});
+        nop +0
+        acc +1
+        jmp +4
+        acc +3
+        jmp -3
+        acc -99
+        acc +1
+        jmp -4
+        acc +6
+        §
+    run-program(@in).tail<acc>.&is(5, 'part 1');
+    
+    |gather { create-alt-programs(@in).map( {
+        given .&run-program { 
+            when .tail eq 'exit' { take .[*-2]<acc>;
+                                   last }
+    }})} ==> { $^result.&is(8, 'part 1') }();
+}

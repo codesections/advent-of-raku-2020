@@ -1,0 +1,19 @@
+#!/usr/bin/env raku
+use v6.d;
+
+# Advent of Code 2020 day 6 -- https://adventofcode.com/2020/day/6
+
+$*OUT.out-buffer = False;   # Autoflush
+
+sub MAIN(IO() $inputfile where *.f = 'aoc06.input', Bool :v(:$verbose) = False)
+{
+    my @groups = $inputfile.slurp.split(/\n\s*\n/);
+
+    my $totalCount = @groups.map(*.comb(/<[a..z]>/).unique.elems).sum;
+    say $verbose ?? 'Part one: the sum of the counts is: ' !! '',
+        $totalCount;
+
+    my $totalCount2 = @groups.map(-> $g { $g.comb(/<[a..z]>/).Bag.grep(*.value == $g.lines).elems }).sum;
+    say $verbose ?? 'Part two: the sum of the counts is: ' !! '',
+        $totalCount2;
+}

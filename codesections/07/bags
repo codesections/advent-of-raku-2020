@@ -1,0 +1,46 @@
+#!/bin/env raku
+# (*NOTE*: this one was a bit rushed and may not be as clean as the others)
+#| Evaluate airport bag rules
+sub MAIN(:$p2=?0, :$p1=!$p2) {
+    my %graph = parse-input(lines);
+    when $p1 { %graph.race.map({(.key => .value.&apply-rules(%graph))})
+                     .grep({.value.Str.contains('shiny-gold-bags')})
+                     .elems.say; }
+    when $p2 { count-bags(@[|%graph.map({
+                   .key => apply-rules( [.value.map({.[0], .[1]})], %graph)
+               }).Hash<shiny-gold-bags>]).say; }
+
+}
+
+sub count-bags(@bags) { gather { for @bags { take .head + (.head × count-bags(.tail.value)) }}.sum }
+sub apply-rules(@bags, %graph --> Array) {
+    @[@bags.map( -> (Int $n, Str $bag-name) {
+       ($n, $bag-name => %graph{$bag-name}.&apply-rules(%graph))
+    })]}
+sub parse-input($_) { .map({
+    m/([\w+] <.ws>)+ 'contain' ( || <.ws> 'no other bags'
+                                 || ( <.ws> (\d+) (<.ws> \w+)+ ','? )+ ) '.'/;
+    $0.words.join('-') => @[($1[0].map(+*[0])) Z $1[0].map(*[1].words.join('-').subst(/bag$/, 'bags'))] // Empty;
+   })}
+
+# Tests (run with `raku --doc -c $NAME`)
+DOC CHECK { use Test;
+    my %graph = parse-input(q:to/§/.lines);
+        light red bags contain 1 bright white bag, 2 muted yellow bags.
+        dark orange bags contain 3 bright white bags, 4 muted yellow bags.
+        bright white bags contain 1 shiny gold bag.
+        muted yellow bags contain 2 shiny gold bags, 9 faded blue bags.
+        shiny gold bags contain 1 dark olive bag, 2 vibrant plum bags.
+        dark olive bags contain 3 faded blue bags, 4 dotted black bags.
+        vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
+        faded blue bags contain no other bags.
+        dotted black bags contain no other bags.
+        §
+    %graph.map({(.key => .value.&apply-rules(%graph))})
+          .grep({.value.Str.contains('shiny-gold-bags')})
+          .elems
+          ==> { $^result.&is(4) }();
+       
+    my @gold-bag = |%graph.map({.key => [.value.map({.[0], .[1]})].&apply-rules(%graph)}).Hash<shiny-gold-bags>;
+    @gold-bag.&count-bags.&is(32);
+}

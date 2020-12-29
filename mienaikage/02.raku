@@ -8,18 +8,20 @@ grammar Password {
 }
 
 sub MAIN (
-  IO() :$file where *.f      = $?FILE.IO.sibling('input/02.txt'), #= Path to input file
-  Int  :$part where * == 1|2 = 1, #= Part of the exercise (1 or 2)
+  #| Path to input file
+  IO() :$file where *.f = ( .sibling('input/' ~ .extension('txt').basename) with $?FILE.IO ),
+  #| Part of the exercise (1 or 2)
+  Int  :$part where * == 1|2 = 1,
   --> Nil
 ) {
   $file.lines
     .grep({
-      given parse Password: $_ {
-        when $part == 1 {
-          .<number>[0] ≤ .<password>.comb(.<letter>) ≤ .<number>[1]
+      given Password.parse($_), $part -> ( $/, $_ ) {
+        when 1 {
+          $/<password>.chars ~~ $/<number>.minmax
         }
-        when $part == 2 {
-          .<password>.comb[.<number>.map(* - 1)].one eq .<letter>
+        when 2 {
+          $/<password>.comb[$/<number>.map(* - 1)].one eq $/<letter>
         }
       }
     })

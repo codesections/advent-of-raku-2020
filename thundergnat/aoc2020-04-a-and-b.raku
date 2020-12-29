@@ -1,8 +1,13 @@
+my $now = now;
+
 my @passport = slurp.split(/\n\n+/).map: { Hash.new(.words».split(':')) };
 
-say 'A valid: ', +@passport.grep: { ( .<cid>:exists and +$_ == 8 ) || ( .<cid>:!exists and +$_ == 7 ) }
+say 'A: ', +@passport.grep({ ( .<cid>:exists and +$_ == 8 ) || ( .<cid>:!exists and +$_ == 7 ) }),
+  (now - $now).fmt("\t(%.2f seconds)");
 
-say 'B valid: ', +@passport.grep: {
+$now = now;
+
+say 'B: ', +@passport.grep({
     (( .<cid>:exists and +$_ == 8 ) || ( .<cid>:!exists and +$_ == 7 ) )
     && ( 1920 <= +.<byr> <= 2002 )
     && ( 2010 <= +.<iyr> <= 2020 )
@@ -11,4 +16,5 @@ say 'B valid: ', +@passport.grep: {
     && ( .<hcl> ~~ /^ '#' <:HexDigit> ** 6 $/ )
     && ( .<ecl> ∈ <amb blu brn gry grn hzl oth> )
     && ( .<pid> ~~ /^ \d ** 9 $/ )
- }
+}),
+(now - $now).fmt("\t(%.2f seconds)");

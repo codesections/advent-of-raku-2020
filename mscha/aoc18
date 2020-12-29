@@ -1,0 +1,93 @@
+#!/usr/bin/env raku
+use v6.d;
+
+# Advent of Code 2020 day 18 -- https://adventofcode.com/2020/day/18
+
+$*OUT.out-buffer = False;   # Autoflush
+
+grammar Calculator
+{
+    rule TOP { ^ <expr> $ }
+
+    rule expr { <term>+ % <oper> }
+
+    proto token oper{ <*> }
+    token oper:sym<+> { <sym> }
+    token oper:sym<*> { <sym> }
+
+    rule term { <value> | '(' <expr> ')' }
+    token value { \d+ }
+}
+
+class Calculation
+{
+    method TOP($/) { make $<expr>.made }
+
+    method expr($/)
+    {
+        my @term = $<term>».made;
+        my @oper = $<oper>»<sym>».Str;
+        my $result = @term.shift;
+        for @term Z @oper -> ($t, $o) {
+            given $o {
+                $result += $t when '+';
+                $result *= $t when '*';
+            }
+        }
+        make $result;
+    }
+
+    method term($/) { make $<value>.made // $<expr>.made }
+    method value($/) { make +$/ }
+}
+
+sub calculate(Str $expr)
+{
+    Calculator.parse($expr, :actions(Calculation.new));
+    return $/.made;
+}
+
+grammar AdvancedCalculator
+{
+    rule TOP { ^ <multiplication> $ }
+    rule multiplication { <addition>+ % '*' }
+    rule addition { <term>+ % '+' }
+    rule term { <value> | '(' <multiplication> ')' }
+    rule value { \d+ }
+}
+
+class AdvancedCalculation
+{
+    method TOP($/) { make $<multiplication>.made }
+    method multiplication($/) { make [*] $<addition>».made }
+    method addition($/) { make [+] $<term>».made }
+    method term($/) { make $<value>.made // $<multiplication>.made }
+    method value($/) { make +$/ }
+}
+
+sub advanced-calculate(Str $expr)
+{
+    AdvancedCalculator.parse($expr, :actions(AdvancedCalculation.new));
+    return $/.made;
+}
+
+sub MAIN(IO() $inputfile where *.f = 'aoc18.input', Bool :v(:$verbose) = False)
+{
+    # Part one
+    my $sum = 0;
+    for $inputfile.lines -> $expr {
+        my $ans = calculate($expr);
+        say "$expr = $ans" if $verbose;
+        $sum += $ans;
+    }
+    say "Part one: the sum of the answers is $sum";
+
+    # Part two
+    my $asum = 0;
+    for $inputfile.lines -> $expr {
+        my $ans = advanced-calculate($expr);
+        say "$expr = $ans" if $verbose;
+        $asum += $ans;
+    }
+    say "Part two: the sum of the answers is $asum";
+}

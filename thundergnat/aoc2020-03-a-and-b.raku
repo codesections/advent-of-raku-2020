@@ -1,7 +1,12 @@
+my $now = now;
+
 my @mountain = lines;
 
-say 'A: ', toboggan 3;
-say 'B: ', toboggan < 1 3 5 7 1/2 >;
+say 'A: ', (toboggan 3), (now - $now).fmt("\t(%.2f seconds)");
+
+$now = now;
+
+say 'B: ', (toboggan < 1 3 5 7 1/2 >), (now - $now).fmt("\t(%.2f seconds)");
 
 sub toboggan (*@slopes) {
     [*] @slopes».Rat.map: -> $slope {

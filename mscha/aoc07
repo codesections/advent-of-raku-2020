@@ -1,0 +1,79 @@
+#!/usr/bin/env raku
+use v6.d;
+
+# Advent of Code 2020 day 7 -- https://adventofcode.com/2020/day/7
+
+$*OUT.out-buffer = False;   # Autoflush
+
+grammar BagRules
+{
+    rule TOP { <bagrule>+ }
+
+    rule bagrule { <bagcolor> <bags> 'contain' [ <bagcount>+ % ',' | 'no other bags' ] '.' }
+
+    rule bagcount { <count> <bagcolor> <bags> }
+
+    token bagcolor { \w+ \s+ \w+ }
+    token bags { 'bag' | 'bags' }
+    token count { \d+ }
+}
+
+class BagHandler
+{
+    has Str $.rules;
+
+    has Str @!colors;
+    has Bag %!bags;
+
+    method bagrule($/)
+    {
+        my $bag = bag $<bagcount>.map(-> $c { slip ~$c<bagcolor> xx +$c<count> });
+        @!colors.append(~$<bagcolor>);
+        %!bags{~$<bagcolor>} = $bag;
+    }
+
+    submethod TWEAK
+    {
+        BagRules.parse($!rules, :actions(self));
+    }
+
+    method can-contain($color1, $color2)
+    {
+        for %!bags{$color1}.keys -> $c {
+            return True if $c eq $color2 || self.can-contain($c, $color2);
+        }
+        return False;
+    }
+    
+    method bags-that-can-contain($color)
+    {
+        return @!colors.grep(-> $c { self.can-contain($c, $color) });
+    }
+
+    method num-contained-bags($color)
+    {
+        return %!bags{$color}.map(-> $b { $b.value × (1 + self.num-contained-bags($b.key)) }).sum;
+    }
+}
+
+sub MAIN(IO() $inputfile where *.f = 'aoc07.input', Bool :v(:$verbose) = False)
+{
+    my $handler = BagHandler.new(:rules($inputfile.slurp));
+
+    my @can-contain = $handler.bags-that-can-contain('shiny gold');
+    if $verbose {
+        say "Part one: there are {+@can-contain} bags that can contain a shiny gold bag:";
+        say " - $_" for @can-contain;
+    }
+    else {
+        say +@can-contain;
+    }
+
+    my $num-bags = $handler.num-contained-bags('shiny gold');
+    if $verbose {
+        say "Part two: the shiny gold bag contains $num-bags other bags.";
+    }
+    else {
+        say $num-bags;
+    }
+}

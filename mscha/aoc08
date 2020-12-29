@@ -1,0 +1,42 @@
+#!/usr/bin/env raku
+use v6.d;
+
+# Advent of Code 2020 day 8 -- https://adventofcode.com/2020/day/8
+
+use lib $*PROGRAM.parent;
+use GameConsole;
+
+$*OUT.out-buffer = False;   # Autoflush
+
+sub MAIN(IO() $inputfile where *.f = 'aoc08.input', Bool :v(:$verbose) = False)
+{
+    my $console = GameConsole.new(:bootcode($inputfile.slurp), :$verbose);
+
+    # Part one - simply run the boot code and check the accumulator when it stops
+    $console.run;
+    say $verbose ?? 'Part 1: value of accumulator when loop detected: ' !! '',
+        $console.acc;
+
+    # Part two: patch each instruction in turn from 'nop' to 'jmp' or vice versa,
+    # run it, and see if it properly terminated.  If so, we're done.
+    INSTRUCTION:
+    for ^$console.instr -> $i {
+        my $orig-oper = $console.instr[$i][0];
+        next if $orig-oper eq 'acc';
+        my $new-oper = $orig-oper eq 'nop' ?? 'jmp' !! 'nop';
+
+        say "Trying line $i operation '$new-oper' instead of '$orig-oper' ..." if $verbose;
+        temp $console.instr[$i][0] = $new-oper;
+        $console.initialize;
+        $console.run;
+        if $console.state == TERM {
+            say "Boot code terminated!" if $verbose;
+            last INSTRUCTION;
+        }
+        else {
+            say "Console state: $console.state()" if $verbose;
+        }
+    }
+    say $verbose ?? 'Part 2: value of accumulator when patched boot code terminates: ' !! '',
+        $console.acc;
+}

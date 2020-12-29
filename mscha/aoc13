@@ -1,0 +1,65 @@
+#!/usr/bin/env raku
+use v6.d;
+
+# Advent of Code 2020 day 13 -- https://adventofcode.com/2020/day/13
+
+$*OUT.out-buffer = False;   # Autoflush
+
+unit sub MAIN(IO() $inputfile where *.f = 'aoc13.input');
+
+my ($now, $id-list) = $inputfile.lines;
+
+# Part one
+my ($id, $time) = next-bus($now, $id-list);
+say "Part one: bus $id comes in $time minutes; answer = { $id×$time }";
+
+# Part two
+say "Part two: the winning time = ", winning-time($id-list);
+
+
+sub next-bus(Int() $earliest-time, Str $id-list)
+{
+    my @ids = $id-list.comb(/\d+/)».Int;
+    return @ids.map({$^id => -$earliest-time % $^id }).min(*.value).kv;
+}
+
+# This one is far too slow
+sub winning-time-too-slow(Str $id-list)
+{
+    my @ids = $id-list.split(',');
+
+    # With 0 buses, all times are allowed
+    my @times = ^∞;
+
+    # For each bus ID, keep only the times where that bus arrives the correct
+    # amount of minutes later
+    for @ids.kv -> $i, $id {
+        next if $id eq 'x';
+        @times = @times.grep(-> $t { ($t + $i) %% $id });
+    }
+
+    # The first one is the winning time
+    return @times[0];
+}
+
+sub winning-time(Str $id-list)
+{
+    my @ids = $id-list.split(',');
+
+    # With 0 buses, all times are allowed
+    my $time = 0;
+    my $step = 1;
+
+    # For each bus ID, find the first time that matches all earlier buses,
+    # which also matches this one
+    for @ids.kv -> $i, $id {
+        next if $id eq 'x';
+        $time = ($time, $time+$step ... *).first(-> $t { ($t + $i) %% $id });
+
+        # When you step up from this time by the least common multiple of the
+        # bus IDs so far, it still matches
+        $step lcm= $id;
+    }
+
+    return $time;
+}
