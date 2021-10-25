@@ -1,0 +1,806 @@
+#+SETUPFILE: ~/.emacs.d/org-templates/level-3.org
+#+HTML_LINK_UP: ../../index.html#2020
+#+OPTIONS: toc:1
+#+EXPORT_FILE_NAME: index
+#+TITLE: Day 11 - Seating System
+
+* Puzzle
+- This puzzle is taken from: https://adventofcode.com/2020/day/11
+
+Your plane lands with plenty of time to spare. The final leg of your
+journey is a ferry that goes directly to the tropical island where you
+can finally start your vacation. As you reach the waiting area to board
+the ferry, you realize you're so early, nobody else has even arrived
+yet!
+
+By modeling the process people use to choose (or abandon) their seat in
+the waiting area, you're pretty sure you can predict the best place to
+sit. You make a quick map of the seat layout (your puzzle input).
+
+The seat layout fits neatly on a grid. Each position is either floor
+(.), an empty seat (L), or an occupied seat (#). For example, the
+initial seat layout might look like this:
+#+BEGIN_SRC
+L.LL.LL.LL
+LLLLLLL.LL
+L.L.L..L..
+LLLL.LL.LL
+L.LL.LL.LL
+L.LLLLL.LL
+..L.L.....
+LLLLLLLLLL
+L.LLLLLL.L
+L.LLLLL.LL
+#+END_SRC
+
+Now, you just need to model the people who will be arriving shortly.
+Fortunately, people are entirely predictable and always follow a simple
+set of rules. All decisions are based on the number of occupied seats
+adjacent to a given seat (one of the eight positions immediately up,
+down, left, right, or diagonal from the seat). The following rules are
+applied to every seat simultaneously:
+
+- If a seat is empty (L) and there are no occupied seats adjacent to it,
+  the seat becomes occupied.
+- If a seat is occupied (#) and four or more seats adjacent to it are
+  also occupied, the seat becomes empty.
+- Otherwise, the seat's state does not change.
+
+Floor (.) never changes; seats don't move, and nobody sits on the floor.
+
+After one round of these rules, every seat in the example layout becomes
+occupied:
+#+BEGIN_SRC
+#.##.##.##
+#######.##
+#.#.#..#..
+####.##.##
+#.##.##.##
+#.#####.##
+..#.#.....
+##########
+#.######.#
+#.#####.##
+#+END_SRC
+
+After a second round, the seats with four or more occupied adjacent
+seats become empty again:
+#+BEGIN_SRC
+#.LL.L#.##
+#LLLLLL.L#
+L.L.L..L..
+#LLL.LL.L#
+#.LL.LL.LL
+#.LLLL#.##
+..L.L.....
+#LLLLLLLL#
+#.LLLLLL.L
+#.#LLLL.##
+#+END_SRC
+
+This process continues for three more rounds:
+#+BEGIN_SRC
+#.##.L#.##
+#L###LL.L#
+L.#.#..#..
+#L##.##.L#
+#.##.LL.LL
+#.###L#.##
+..#.#.....
+#L######L#
+#.LL###L.L
+#.#L###.##
+#+END_SRC
+#+BEGIN_SRC
+#.#L.L#.##
+#LLL#LL.L#
+L.L.L..#..
+#LLL.##.L#
+#.LL.LL.LL
+#.LL#L#.##
+..L.L.....
+#L#LLLL#L#
+#.LLLLLL.L
+#.#L#L#.##
+#+END_SRC
+#+BEGIN_SRC
+#.#L.L#.##
+#LLL#LL.L#
+L.#.L..#..
+#L##.##.L#
+#.#L.LL.LL
+#.#L#L#.##
+..L.L.....
+#L#L##L#L#
+#.LLLLLL.L
+#.#L#L#.##
+#+END_SRC
+
+At this point, something interesting happens: the chaos stabilizes and
+further applications of these rules cause no seats to change state! Once
+people stop moving around, you count 37 occupied seats.
+
+Simulate your seating area by applying the seating rules repeatedly
+until no seats change state. How many seats end up occupied?
+** Part 2
+As soon as people start to arrive, you realize your mistake. People
+don't just care about adjacent seats - they care about the first seat
+they can see in each of those eight directions!
+
+Now, instead of considering just the eight immediately adjacent seats,
+consider the first seat in each of those eight directions. For example,
+the empty seat below would see eight occupied seats:
+#+BEGIN_SRC
+.......#.
+...#.....
+.#.......
+.........
+..#L....#
+....#....
+.........
+#........
+...#.....
+#+END_SRC
+
+The leftmost empty seat below would only see one empty seat, but cannot
+see any of the occupied ones:
+#+BEGIN_SRC
+.............
+.L.L.#.#.#.#.
+.............
+#+END_SRC
+
+The empty seat below would see no occupied seats:
+#+BEGIN_SRC
+.##.##.
+#.#.#.#
+##...##
+...L...
+##...##
+#.#.#.#
+.##.##.
+#+END_SRC
+
+Also, people seem to be more tolerant than you expected: it now takes
+five or more visible occupied seats for an occupied seat to become empty
+(rather than four or more from the previous rules). The other rules
+still apply: empty seats that see no occupied seats become occupied,
+seats matching no rule don't change, and floor never changes.
+
+Given the same starting layout as above, these new rules cause the
+seating area to shift around as follows:
+#+BEGIN_SRC
+L.LL.LL.LL
+LLLLLLL.LL
+L.L.L..L..
+LLLL.LL.LL
+L.LL.LL.LL
+L.LLLLL.LL
+..L.L.....
+LLLLLLLLLL
+L.LLLLLL.L
+L.LLLLL.LL
+#+END_SRC
+#+BEGIN_SRC
+#.##.##.##
+#######.##
+#.#.#..#..
+####.##.##
+#.##.##.##
+#.#####.##
+..#.#.....
+##########
+#.######.#
+#.#####.##
+#+END_SRC
+#+BEGIN_SRC
+#.LL.LL.L#
+#LLLLLL.LL
+L.L.L..L..
+LLLL.LL.LL
+L.LL.LL.LL
+L.LLLLL.LL
+..L.L.....
+LLLLLLLLL#
+#.LLLLLL.L
+#.LLLLL.L#
+#+END_SRC
+#+BEGIN_SRC
+#.L#.##.L#
+#L#####.LL
+L.#.#..#..
+##L#.##.##
+#.##.#L.##
+#.#####.#L
+..#.#.....
+LLL####LL#
+#.L#####.L
+#.L####.L#
+#+END_SRC
+#+BEGIN_SRC
+#.L#.L#.L#
+#LLLLLL.LL
+L.L.L..#..
+##LL.LL.L#
+L.LL.LL.L#
+#.LLLLL.LL
+..L.L.....
+LLLLLLLLL#
+#.LLLLL#.L
+#.L#LL#.L#
+#+END_SRC
+#+BEGIN_SRC
+#.L#.L#.L#
+#LLLLLL.LL
+L.L.L..#..
+##L#.#L.L#
+L.L#.#L.L#
+#.L####.LL
+..#.#.....
+LLL###LLL#
+#.LLLLL#.L
+#.L#LL#.L#
+#+END_SRC
+#+BEGIN_SRC
+#.L#.L#.L#
+#LLLLLL.LL
+L.L.L..#..
+##L#.#L.L#
+L.L#.LL.L#
+#.LLLL#.LL
+..#.L.....
+LLL###LLL#
+#.LLLLL#.L
+#.L#LL#.L#
+#+END_SRC
+
+Again, at this point, people stop shifting around and the seating area
+reaches equilibrium. Once this occurs, you count 26 occupied seats.
+
+Given the new visibility method and the rule change for occupied seats
+becoming empty, once equilibrium is reached, how many seats end up
+occupied?
+* Solution
+=@seats= will hold an Array of Arrays, where each element will represent a
+seat.
+#+BEGIN_SRC raku
+unit sub MAIN (
+    Int $part where * == 1|2 = 1 #= part to run (1 or 2)
+);
+
+my @seats = "input".IO.lines.map(*.comb.cache.Array);
+my Int ($x-max, $y-max) = (@seats[0].end, @seats.end);
+#+END_SRC
+
+Part 1 & 2 are so similar that we just need to change 2 variables to get
+other part's solution. =$visibility= is of type Num which holds the
+visibility range, as discussed in part 2 of the puzzle above. For part
+1, this value is just 1 but increases to Infinity for part 2.
+
+The other variable is =$tolerance=, for part 2 we change it to 5.
+#+BEGIN_SRC raku
+my Num $visibility = 1e0;
+my Int $tolerance = 4;
+
+# Infinite visibility & increased tolerance for part 2.
+($visibility, $tolerance) = (Inf, 5) if $part == 2;
+#+END_SRC
+
+=@directions= is an Array of Lists, where each List holds the values of =$y=
+& =$x= required to get to the immediate neighbor. It contains 8 Lists,
+each for a direction as shown below.
+#+BEGIN_SRC raku
+my List @directions[8] = (
+    # $y, $x
+    ( +1, +0 ), # bottom
+    ( +1, +1 ), # bottom-right
+    ( +1, -1 ), # bottom-left
+    ( -1, +0 ), # top
+    ( -1, +1 ), # top-right
+    ( -1, -1 ), # top-left
+    ( +0, +1 ), # right
+    ( +0, -1 ), # left
+);
+#+END_SRC
+
+=$round= is just a nice addition, it'll print the number of rounds we pass
+as the code progresses. The outer loop just repeats the =INNER= loop until
+=@changed= equals =@seats=. The =INNER= loop is what handles all the seating
+arrangement changes & stores them in =@changed=. I've documented the =INNER=
+loop after this.
+
+A little note about =eqv= operator here: I don't know what it does but
+it's very smart. I removed =eqv= & added a Bool flag that was set to True
+whenever something was changed & checked that instead of comparing with
+=eqv=. But the code didn't run much faster, =eqv= code was equally as fast.
+
+I compared this by profiling the code with =raku --profile=. I just
+compared the times & did it only once, so maybe the load was higher
+during Bool profiling so it ran slower but yeah the change wasn't much.
+And there wasn't much interval between both profilings so I think =eqv= is
+actually very smart.
+#+BEGIN_SRC raku
+my Int $round = 0;
+loop {
+    $round++;
+    print "Round $round.\r";
+
+    my Int ($x, $y) = (-1, 0);
+    my @changed;
+    INNER: loop {
+        ...
+    }
+    # If seats didn't change then exit the loop.
+    last if @seats eqv @changed;
+
+    for 0 .. @changed.end -> $y {
+        for 0.. @changed[0].end -> $x {
+            @seats[$y][$x] = @changed[$y][$x];
+        }
+    }
+}
+#+END_SRC
+
+This is the =INNER= loop. It handles the changes in arrangements & stores
+them in =@changed=. It loops over each seat one by one & decides if they
+need to be changed. The =given/when= is doing the changing. It simply
+follows the rules listed in the puzzle above.
+
+As for why changes are recorded in =@changed= & not =@seats=, because people
+seat at once & not one by one. =adjacent-occupied= returns whether the
+seat is occupied or not in case of "L" whereas it returns the number of
+seats that are occupied in case of "#".
+
+This is done because number of seats occupied is not required for "L".
+The fifth argument that is being passes is True in case of "L", that
+signals =adjacent-occupied= that we just need to know if any adjacent is
+occupied or not & not the number of adjacents occupied.
+
+The subroutine =adjacent-occupied= is discussed after this.
+#+BEGIN_SRC raku
+if $x == $x-max {
+    $x = 0;
+    # goto next row if not in the last row.
+    last INNER if $y == $y-max;
+    $y += 1;
+} else {
+    $x += 1;
+}
+
+@changed[$y][$x] = @seats[$y][$x];
+given @seats[$y][$x] {
+    when '.' { next INNER; }
+    when 'L' {
+        unless adjacent-occupied(@seats, $x, $y, $visibility, True) {
+            @changed[$y][$x] = '#';
+        }
+    }
+    when '#' {
+        if adjacent-occupied(@seats, $x, $y,
+                             $visibility, False) >= $tolerance {
+            @changed[$y][$x] = 'L';
+        }
+    }
+}
+#+END_SRC
+
+For the solution, we just print the number of "#" in =@seats=.
+#+BEGIN_SRC raku
+say "Part $part: ", @seats.join.comb('#').elems;
+#+END_SRC
+
+=adjacent-occupied= returns the number of adjacent cells that have been
+occupied by others. =$visibility= should be 1 if only directly adjacent
+seats are to be counted. Make it Inf for infinite visibility. It ignores
+floors ('.').
+
+If =$only-bool= is set then a Bool will be returned which will indicate
+whether any adjacent seat it occupied or not. It handles this by
+including an early return statement which is only executed if =$only-bool=
+is set to True & it returns when we find the first occupied seat.
+
+=Occupied= subset validates the return value, it should only be Int or a
+Bool.
+
+It loops over the neighbors returned by the =neighbors= subroutine. That
+sub returns the list of neighbors of a particular seat. It only returns
+the indexes of neighbors and not their value. We just loop over the
+indexes & check if the it's occupied & increment =$occupied= if it is.
+#+BEGIN_SRC raku
+subset Occupied where Int|Bool;
+sub adjacent-occupied (
+    @seats, Int $x, Int $y, Num $visibility, Bool $only-bool = False
+                                                  --> Occupied
+) {
+    my Int $occupied = 0;
+    for neighbors(@seats, $x, $y, $visibility).List -> $neighbor {
+        if @seats[$neighbor[0]][$neighbor[1]] eq '#' {
+            return True if $only-bool;
+            $occupied++ ;
+        }
+    }
+    return $occupied;
+}
+#+END_SRC
+
+=neighbors= returns the neighbors of given index. It doesn't account for
+=$visibility= when caching the results. So, if =$visibility= changes & it
+has a cached result then the return value might be wrong. So, you can't
+solve both part 1 & 2 at once because =$visibility= changes between the
+two. This can be solved easily by just accounting for =$visibility= when
+caching the neighbors.
+
+Initially this subroutine didn't exist and it's logic was a part of the
+=adjacent-occupied= sub. =coldpress= on freenode suggested me to cache the
+results. I can't paste the whole chat, it was direct message, I'll quote
+a part of it.
+#+BEGIN_QUOTE
+You should not recompute the indexes of each neighbor in your for-for
+loop, but you should check the state of each neighbor in your for-for
+loop
+#+END_QUOTE
+
+Before this =$pos-y= & =$pos-x= which hold the position of neighbors were
+being recomputed everytime but we don't need to do that. The indexes of
+each neighbor stays the same & only the value might change. So we cache
+the indexes. And that's what =neighbors= sub does, it caches the indexes
+of each seat's neighbors.
+
+=@neighbors= is an Array of Arrays, it's a =state= variable, which means
+that the values will persist on each =neighbors= subroutine call. When
+this is called, we just checked if we have the indexes of neighbors
+cached, if not then we compute & save it for later. If yes then we just
+return from cache.
+#+BEGIN_SRC raku
+sub neighbors (
+    @seats, Int $x, Int $y, Num $visibility --> List
+) {
+    state Array @neighbors;
+
+    unless @neighbors[$y][$x] {
+        my Int $pos-x;
+        my Int $pos-y;
+
+        DIRECTION: for @directions -> $direction {
+            $pos-x = $x;
+            $pos-y = $y;
+            SEAT: for 1 .. $visibility {
+                $pos-y += $direction[0];
+                $pos-x += $direction[1];
+
+                next DIRECTION unless @seats[$pos-y][$pos-x];
+                given @seats[$pos-y][$pos-x] {
+                    # Don't care about floors, no need to check those.
+                    when '.' { next SEAT; }
+                    when 'L'|'#' {
+                        push @neighbors[$y][$x], [$pos-y, $pos-x];
+                        next DIRECTION;
+                    }
+                }
+            }
+        }
+    }
+
+    return @neighbors[$y][$x];
+}
+#+END_SRC
+
+About the computing neighbors part, we loop over =@directions= & then loop
+over =1 .. $visibility=, if the visibility is 1 then the =SEAT= for loop
+just runs once. The =SEAT= for loop increments the value of =$pos-x= &
+=$pos-y= in given direction. So, if the visibility is Infinite then we'll
+keep incrementing.
+
+To prevent infinite loop over there we add a check. If the seat doesn't
+exist then we just move on to next =DIRECTION=. This is handled by the
+=unless= block. If the seat does exist then we check if it's floor, if
+true then we just ignore it & move on to next =SEAT=. Note that if
+=$visibility= is set to 1 then we will just exit the =SEAT= for loop.
+
+This means that we simply don't check in that direction in
+=adjacent-occupied= subroutine, it's fine because the floors don't move as
+stated in the puzzle. If it's not a floor then we cache the indexes and
+move on to next =DIRECTION=.
+
+We move to next =DIRECTION= because the puzzle notes this in part 2:
+#+BEGIN_QUOTE
+People don't just care about adjacent seats - they care about the first
+seat they can see in each of those eight directions!
+#+END_QUOTE
+
+The people care about first seat they see in each direction, so we move
+on to next direction after reaching the first seat.
+** Part 2
+Only 2 variables are changed to get part 2 solution.
+#+BEGIN_SRC raku
+# Infinite visibility & increased tolerance for part 2.
+($visibility, $tolerance) = (Inf, 5) if $part == 2;
+#+END_SRC
+* Notes
+This note is about this piece of code in =neighbors= subroutine:
+#+BEGIN_SRC raku
+push @neighbors[$y][$x], [$pos-y, $pos-x];
+#+END_SRC
+
+Note how I'm pushing an Array =[]=, instead of a List =()=. Pushing a list
+will cause undesired behavior.
+
+According to https://docs.raku.org/language/list#Assigning:
+#+BEGIN_QUOTE
+Assignment of a list to an Array is eager. The list will be entirely
+evaluated, and should not be infinite or the program may hang. [...]
+#+END_QUOTE
+
+I'm not sure if this is why this weird behavior happens. When I change
+the .Array below to .List it'll cause undesired behavior. It'll push the
+same thing.
+
+=coldpress= on =#raku@freenode= guessed it correctly:
+#+BEGIN_QUOTE
+<coldpress> my guess is: the wrong behavior is because all elements
+refer to the same object, pass-by-reference. The correct behavior with
+.Array is because each element now refers to different objects.
+#+END_QUOTE
+
+I confirmed that with changing the value without pushing. That confirmed
+that it was not weird push behaviour. What I was pushing was a reference
+to the same object, so when I changed it above in =$pos-y= & =$pos-x= the
+whole thing changed.
+
+=raiph= clears this up on =#raku@freenode= later:
+#+BEGIN_QUOTE
+<raiph> notandinus: An `Array` is a subtype of `List` but their
+behaviours are also complementary.
+
+`Array`s zig in several ways where `List`s zag. This is true of their
+literals.
+
+If you switch your code from pushing `($pos-y, $pos-x)` to `[$pos-y,
+$pos-x]` you'll find it works.
+
+This is because the `Array` literal constructor just takes the *values*
+contained in the Scalar`s `$pos-x` and `$pos-y` and puts those values
+into its own fresh `Scalar`s.
+
+Whereas the `List` literal constructor does *not* by default put values in
+`Scalar`s -- but if you list one, it stores that instead of the value it
+contains.
+#+END_QUOTE
+* Optimizations
+This records the optimizations I made to this day's solution. Some have
+already been discussed in the solution, I'll discuss the rest here. I've
+profiled the code after significant changes & I'll include information
+from the profile too.
+
+Note that I'm writing this on 2020-12-12 but this thing was done
+yesterday, more than 24 hours have passed so I don't remember much. I
+was giving feedback on =#raku@freenode= after each profile so I'll be able
+to co-relate after looking at IRC logs & created timestamps of profile
+files.
+
+=tyil=, =tadzik=, =lizmat=, =coldpress=, =m6locks= and others on =#raku@freenode=
+helped me optimize this code.
+
+These are values from each profile:
+| Value                   |   Profile 1 |   Profile 2 |   Profile 3 |   Profile 4 |
+|-------------------------+-------------+-------------+-------------+-------------|
+| runtime                 | 600864.29ms | 410946.37ms | 394648.55ms | 119883.87ms |
+| executing code          | 553554.21ms | 374743.72ms | 359771.16ms | 105375.88ms |
+| D-optimization          |   1076.63ms |    982.01ms |   1106.14ms |    697.79ms |
+|-------------------------+-------------+-------------+-------------+-------------|
+| GC time                 |  47310.08ms |  36202.65ms |  34877.39ms |  14507.99ms |
+| collections             |        1248 |        1220 |        1095 |         686 |
+| full collections        |           7 |           7 |           7 |           3 |
+| nursery collection time |     34.27ms |     25.89ms |     27.68ms |     18.79ms |
+| full collection time    |    683.38ms |    684.92ms |    679.89ms |    557.17ms |
+|-------------------------+-------------+-------------+-------------+-------------|
+| entered C-frames        |   102699610 |    73313599 |    64911620 |    20752434 |
+| eliminated C-frames     |   141047998 |    98109798 |    74733815 |    43446172 |
+| interpreted frames      |    21205734 |    11607457 |    13106524 |      104217 |
+| specialized frames      |      758246 |      718619 |      758310 |      504276 |
+| jit-compiled frames     |   221783628 |   159097321 |   125780601 |    63590113 |
+|-------------------------+-------------+-------------+-------------+-------------|
+| eliminated allocations  |       78450 |       78500 |       78550 |           - |
+| deoptimizations         |      405912 |      487180 |      487175 |      240735 |
+| on-stack replacements   |         138 |         144 |         138 |          65 |
+
++ C-frames stands for call frames.
++ eliminated C-frames were by inlining.
++ D-optimization stands for dynamic optimization.
++ eliminated allocations were by Scalar replacement.
+
++ runtime = executing code + dynamic optimization
++ (jit-compiled + specialized + interpreted = entered) call frames
++ (eliminated + entered = total) call frames
+
+*Note*: I'm writing this on 2020-12-14, I don't remember anything so
+everything below is just from IRC logs.
+
+Initially I had defined the =@directions= block inside of
+=adjacent-occupied= subroutine, note that at this point =neighbors=
+subroutine didn't exist. So, =@directions= was being created & destroyed
+continously. I changed it to a =state= variable & noticed significant
+improvements.
+
+** Profile 1
+This was the initial Profile, I don't have the code. The structure was
+not much different from what it is now, just too inefficient.
+
+** Profile 2
+I was declaring the =@directions= array inside of =adjacent-occupied=
+subroutine. I changed it to a =state= variable.
+
+** Profile 3
+I made =@directions= a global array.
+
+** Profile 4
+I put =adjacent-occupied= inside of =MAIN= subroutine along with
+=@directions=.
+
+* Partial solution
+I tried solving this another way but it was way too complex so I gave
+up. I made it work on sample input given in puzzle but it didn't work on
+my actual input. I couldn't point out the error so I just left it as is.
+The code is stored in =day-11.partial.raku=. I'll paste it below.
+
+The idea was to use a single dimension array instead of Array of Arrays.
+This made things a bit complicated but would've been faster if I could
+get it working. This only dealt with part 1 before I stopped working on
+it & went back to Array of Arrays.
+
+We have 3 different arrays instead of a single =@directions= array
+because I was relying on the fact that if I cross the boundary then the
+seat wouldn't exist & we won't check for it. But in this case there are
+only 2 boundaries, index 0 & last index.
+
+So, instead we have 3 arrays, one =@non-left-corner= which contains the
+directions that left corner can't follow. It can't go "up-left", "left"
+or "down-left". And we have similar array for directions that right
+corner elements can't follow.
+
+I'm not sure what is wrong with the code. This solution would've been
+interesting. I'm pasting some useful information that might help in
+debugging.
+
+This is what the partial & actual solution print in case of sample input
+given in puzzle:
+#+BEGIN_SRC
+Part 1: 71
+Part 1: 20
+Part 1: 51
+Part 1: 30
+Part 1: 37
+Part 1: 37
+#+END_SRC
+
+Those were the number of "#" after each round. This is what they print
+when I test it with the actual input:
+#+BEGIN_SRC
+Part 1: 7311
+Part 1: 568
+Part 1: 5524
+Part 1: 1502
+Part 1: 3907
+Part 1: 2198
+Part 1: 3058
+#+END_SRC
+
+That was partial solution's output, here is actual solution's output:
+#+BEGIN_SRC
+Part 1: 7311
+Part 1: 194
+Part 1: 6768
+Part 1: 414
+Part 1: 6204
+Part 1: 610
+Part 1: 5739
+Part 1: 809
+Part 1: 5322
+#+END_SRC
+
+They diverge right after first round. I'm not sure what went wrong, I
+can print the seat layout & try to debug but I don't have the energy to
+do that currently. Maybe I'll do it sometime later.
+
+#+BEGIN_SRC raku
+sub MAIN (
+    Int $part where * == 1|2 = 1 #= part to run (1 or 2)
+) {
+    my @input = "input".IO.lines;
+    my Int $x-max = @input[0].chars - 1;
+    my Int $row-length = $x-max + 1;
+
+    my @seats = @input.join.comb;
+    my $max-seats = @seats.end;
+
+    my @directions = (+$row-length, -$row-length); # down, up
+
+    # @non-left-corner contains directions that left corner can't
+    # follow. It should only be followed by non-left corner seats.
+    my @non-left-corner = (
+        -$row-length - 1, # up-left
+        -1, # left
+        +$row-length - 1, # down-left
+    );
+
+    # @non-right-corner contains directions that right corner can't
+    # follow. It should only be followed by non-right corner seats.
+    my @non-right-corner = (
+        -$row-length + 1, # up-right
+        +1, # right
+        +$row-length + 1, # down-right
+    );
+
+    my Int $round = 0;
+    loop {
+        my @changed;
+        my Bool $change = False;
+
+        INNER: for @seats.kv -> $idx, $seat {
+            @changed[$idx] = $seat;
+            given $seat {
+                when '.' { next INNER; }
+                when 'L' {
+                    if adjacent-occupied($idx, 1) == 0 {
+                        @changed[$idx] = '#';
+                        $change = True;
+                    }
+                }
+                when '#' {
+                    if adjacent-occupied($idx, 1) >= 4 {
+                        @changed[$idx] = 'L';
+                        $change = True;
+                    }
+                }
+            }
+        }
+        $round++;
+        print "Round $round.\r";
+
+        last unless $change;
+
+        for @changed.kv -> $idx, $changed_seat {
+            @seats[$idx] = $changed_seat;
+        }
+    }
+
+    my Int $occupied = @seats.comb('#').elems;
+    say "Part $part: ", $occupied;
+
+    # adjacent-occupied returns the number of adjacent cells that have
+    # been occupied by others. $visibility_range should be 1 if only
+    # directly adjacent seats are to be counted. Make it -1 for
+    # infinite visibility. It ignores floors ('.').
+    sub adjacent-occupied (
+        Int $idx, Int $visibility_range --> Int
+    ) {
+        my Int $occupied = 0;
+
+        for @directions -> $direction {
+            with @seats[$idx + $direction] {
+                $occupied++ if $_ eq '#';
+            }
+        }
+
+        # Elements in right corner can't follow @non-right-corner.
+        unless ($idx + 1) % 10 == 0 {
+            for @non-right-corner -> $direction {
+                with @seats[$idx + $direction] {
+                    $occupied++ if $_ eq '#';
+                }
+            }
+        }
+
+        # Elements in left corner can't follow @non-left-corner.
+        unless $idx % 10 == 0 {
+            for @non-left-corner -> $direction {
+                with @seats[$idx + $direction] {
+                    $occupied++ if $_ eq '#';
+                }
+            }
+        }
+
+        return $occupied;
+    }
+}
+#+END_SRC
